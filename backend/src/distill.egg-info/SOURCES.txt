@@ -1,7 +1,0 @@
-pyproject.toml
-src/distill/__init__.py
-src/distill.egg-info/PKG-INFO
-src/distill.egg-info/SOURCES.txt
-src/distill.egg-info/dependency_links.txt
-src/distill.egg-info/requires.txt
-src/distill.egg-info/top_level.txt
