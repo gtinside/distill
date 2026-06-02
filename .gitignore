@@ -26,6 +26,9 @@ env/
 *.xcuserstate
 xcuserdata/
 
+# Supabase CLI
+supabase/.temp/
+
 # Xcode / iOS
 *.xcworkspace/
 DerivedData/
