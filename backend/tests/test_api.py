@@ -36,6 +36,9 @@ class StubDb:
         self.topics.append(topic)
         return topic
 
+    def get_topic(self, topic_id: str) -> dict | None:
+        return next((t for t in self.topics if t["id"] == topic_id), None)
+
     def update_topic(self, topic_id: str, data: dict) -> dict:
         for t in self.topics:
             if t["id"] == topic_id:
@@ -55,6 +58,14 @@ class StubDb:
         self.digest = digest
         return digest
 
+    def get_topic_card(self, user_id: str, topic_id: str) -> dict | None:
+        if not self.digest:
+            return None
+        return next(
+            (c for c in self.digest.get("topic_cards", []) if c.get("topic_id") == topic_id),
+            None,
+        )
+
     # Settings ----------------------------------------------------------------
 
     def get_settings(self, user_id: str) -> dict:
@@ -68,22 +79,54 @@ class StubDb:
 class StubOrchestrator:
     """In-memory stub for DigestOrchestrator."""
 
-    def __init__(self, result=None):
+    def __init__(self, result=None, refresh_result=None):
         self.called_with: str | None = None
         self._result = result or {"topic_cards": []}
+        self._refresh_result = refresh_result or {
+            "id": "card-1",
+            "topic_id": "topic-1",
+            "tldr": "Refreshed summary",
+            "bullets": [],
+            "sources": [],
+            "status": "ok",
+            "last_refreshed_at": None,
+            "display_order": 0,
+        }
 
     def generate(self, user_id: str):
         self.called_with = user_id
         return self._result
+
+    def refresh_card(self, user_id: str, topic_id: str):
+        self.called_with = user_id
+        return self._refresh_result
 
 
 # ---------------------------------------------------------------------------
 # Client factory — used by every test
 # ---------------------------------------------------------------------------
 
+TEST_JWT_SECRET = "test-secret"
+
+
 def make_client(db=None, orchestrator=None) -> TestClient:
     from distill.api import create_app
     app = create_app(db=db or StubDb(), orchestrator=orchestrator or StubOrchestrator())
+    return TestClient(app, raise_server_exceptions=True)
+
+
+def make_jwt(user_id: str) -> str:
+    import jwt
+    return jwt.encode({"sub": user_id}, TEST_JWT_SECRET, algorithm="HS256")
+
+
+def make_authed_client(db=None, orchestrator=None) -> TestClient:
+    from distill.api import create_app
+    app = create_app(
+        db=db or StubDb(),
+        orchestrator=orchestrator or StubOrchestrator(),
+        jwt_secret=TEST_JWT_SECRET,
+    )
     return TestClient(app, raise_server_exceptions=True)
 
 
@@ -246,7 +289,7 @@ def test_patch_settings_delivery_time():
 
 
 # ---------------------------------------------------------------------------
-# Behavior 10: Any endpoint without X-User-Id header -> 401
+# Behavior 10: Any endpoint without auth header -> 401
 # ---------------------------------------------------------------------------
 
 def test_missing_auth_header_returns_401():
@@ -266,3 +309,151 @@ def test_missing_auth_header_returns_401():
         assert resp.status_code == 401, (
             f"Expected 401 for {method} {path}, got {resp.status_code}"
         )
+
+
+# ---------------------------------------------------------------------------
+# Behavior 11: PATCH /topics/:id — valid update returns updated topic
+# ---------------------------------------------------------------------------
+
+def test_patch_topic_phrase():
+    db = StubDb()
+    db.topics = [{"id": "t1", "user_id": "user-1", "phrase": "original", "display_order": 0}]
+    client = make_client(db=db)
+
+    resp = client.patch(
+        "/topics/t1",
+        json={"phrase": "updated phrase"},
+        headers={"X-User-Id": "user-1"},
+    )
+
+    assert resp.status_code == 200
+    assert resp.json()["phrase"] == "updated phrase"
+
+
+# ---------------------------------------------------------------------------
+# Behavior 12: PATCH /topics/:id — another user's topic -> 403
+# ---------------------------------------------------------------------------
+
+def test_patch_topic_forbidden():
+    db = StubDb()
+    db.topics = [{"id": "t1", "user_id": "user-1", "phrase": "private", "display_order": 0}]
+    client = make_client(db=db)
+
+    resp = client.patch(
+        "/topics/t1",
+        json={"phrase": "hijacked"},
+        headers={"X-User-Id": "user-2"},
+    )
+
+    assert resp.status_code == 403
+    assert db.get_topic("t1")["phrase"] == "private"  # unchanged
+
+
+# ---------------------------------------------------------------------------
+# Behavior 13: DELETE /topics/:id — another user's topic -> 403
+# ---------------------------------------------------------------------------
+
+def test_delete_topic_forbidden():
+    db = StubDb()
+    db.topics = [{"id": "t1", "user_id": "user-1", "phrase": "private", "display_order": 0}]
+    client = make_client(db=db)
+
+    resp = client.delete("/topics/t1", headers={"X-User-Id": "user-2"})
+
+    assert resp.status_code == 403
+    assert db.count_topics("user-1") == 1  # not deleted
+
+
+# ---------------------------------------------------------------------------
+# Behavior 14: Valid Bearer JWT -> authenticated, user_id extracted from sub claim
+# ---------------------------------------------------------------------------
+
+def test_bearer_jwt_auth():
+    db = StubDb()
+    client = make_authed_client(db=db)
+    token = make_jwt("user-jwt-1")
+
+    resp = client.post(
+        "/topics",
+        json={"phrase": "macroeconomics"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert resp.status_code == 201
+    assert resp.json()["user_id"] == "user-jwt-1"
+
+
+# ---------------------------------------------------------------------------
+# Behavior 15: Invalid Bearer JWT -> 401
+# ---------------------------------------------------------------------------
+
+def test_invalid_bearer_jwt_returns_401():
+    client = make_authed_client()
+
+    resp = client.get("/topics", headers={"Authorization": "Bearer not-a-real-jwt"})
+
+    assert resp.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# Behavior 16: POST /digest/topics/:id/refresh — no recent refresh -> 200, card returned
+# ---------------------------------------------------------------------------
+
+def test_refresh_topic_card_success():
+    from datetime import datetime, timezone, timedelta
+    db = StubDb()
+    # Card whose last_refreshed_at is well over 60 minutes ago
+    old_refresh = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat()
+    db.digest = {
+        "topic_cards": [
+            {
+                "id": "card-1",
+                "topic_id": "topic-1",
+                "status": "ok",
+                "last_refreshed_at": old_refresh,
+            }
+        ]
+    }
+    orchestrator = StubOrchestrator()
+    client = make_client(db=db, orchestrator=orchestrator)
+
+    resp = client.post(
+        "/digest/topics/topic-1/refresh",
+        headers={"X-User-Id": "user-1"},
+    )
+
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "ok"
+    assert orchestrator.called_with == "user-1"
+
+
+# ---------------------------------------------------------------------------
+# Behavior 17: POST /digest/topics/:id/refresh — refreshed < 60 min ago -> 429
+# ---------------------------------------------------------------------------
+
+def test_refresh_topic_card_rate_limited():
+    from datetime import datetime, timezone, timedelta
+    db = StubDb()
+    # Card refreshed only 5 minutes ago
+    recent_refresh = (datetime.now(timezone.utc) - timedelta(minutes=5)).isoformat()
+    db.digest = {
+        "topic_cards": [
+            {
+                "id": "card-1",
+                "topic_id": "topic-1",
+                "status": "ok",
+                "last_refreshed_at": recent_refresh,
+            }
+        ]
+    }
+    client = make_client(db=db)
+
+    resp = client.post(
+        "/digest/topics/topic-1/refresh",
+        headers={"X-User-Id": "user-1"},
+    )
+
+    assert resp.status_code == 429
+    body = resp.json()
+    assert "retry_after" in body["detail"]
+    assert "Refresh available at" in body["detail"]["detail"]

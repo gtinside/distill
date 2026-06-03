@@ -43,3 +43,17 @@ See `.env.example` for the full list. Required:
 ## Implementation Status
 
 Issues tracked at https://github.com/gtinside/distill/issues — 13 vertical slices, starting with #2 (external services setup).
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues (`gh` CLI). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` + `docs/adr/` at repo root. See `docs/agents/domain.md`.
