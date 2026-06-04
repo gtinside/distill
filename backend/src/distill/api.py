@@ -26,6 +26,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
         self._jwt_secret = jwt_secret
 
     async def dispatch(self, request: Request, call_next):
+        if request.url.path == "/health":
+            return await call_next(request)
         user_id = self._extract_user_id(request)
         if not user_id:
             return Response(
@@ -58,6 +60,10 @@ def create_app(db, orchestrator, jwt_secret: str = "") -> FastAPI:
     app.add_middleware(AuthMiddleware, jwt_secret=jwt_secret)
     app.state.db = db
     app.state.orchestrator = orchestrator
+
+    @app.get("/health", include_in_schema=False)
+    def health():
+        return {"status": "ok"}
 
     @app.post("/topics", status_code=201)
     def create_topic(body: TopicCreate, request: Request):

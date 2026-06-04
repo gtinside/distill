@@ -4,7 +4,7 @@ struct APIClient {
     #if DEBUG
     static let baseURL = "http://localhost:8000"
     #else
-    static let baseURL = ProcessInfo.processInfo.environment["BACKEND_URL"] ?? "http://localhost:8000"
+    static let baseURL = "https://distill-production-adec.up.railway.app"
     #endif
 
     private let token: String

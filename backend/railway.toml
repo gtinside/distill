@@ -2,8 +2,8 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "python -m distill.main"
-healthcheckPath = "/docs"
-healthcheckTimeout = 30
+startCommand = "PYTHONPATH=src python -m distill.main"
+healthcheckPath = "/health"
+healthcheckTimeout = 60
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
