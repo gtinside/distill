@@ -40,6 +40,10 @@ struct APIClient {
         try await get("/digest")
     }
 
+    func updateDeviceToken(_ token: String) async throws {
+        _ = try await patch("/settings", body: ["device_token": token])
+    }
+
     func generateDigest() async throws -> Digest {
         try await decode(post("/digest/generate", body: [:]))
     }

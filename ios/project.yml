@@ -9,6 +9,9 @@ packages:
   Supabase:
     url: https://github.com/supabase/supabase-swift
     from: 2.0.0
+  FirebaseSDK:
+    url: https://github.com/firebase/firebase-ios-sdk
+    from: 11.0.0
 
 targets:
   Distill:
@@ -22,11 +25,14 @@ targets:
     dependencies:
       - package: Supabase
         product: Supabase
+      - package: FirebaseSDK
+        product: FirebaseMessaging
     entitlements:
       path: Distill/Resources/Distill.entitlements
       properties:
         com.apple.developer.applesignin:
           - Default
+        aps-environment: development
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.gtinside.distill
@@ -41,3 +47,5 @@ targets:
           UIColorName: ""
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
+        UIBackgroundModes:
+          - remote-notification

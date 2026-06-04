@@ -1,4 +1,5 @@
 import SwiftUI
+import UserNotifications
 
 struct ContentView: View {
     @StateObject private var authManager = AuthManager()
@@ -41,13 +42,27 @@ struct ContentView: View {
         }
     }
 
+    @State private var selectedTab = 0
+
     private var tabShell: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             DigestView()
                 .tabItem { Label("Digest", systemImage: "newspaper") }
+                .tag(0)
             TopicsView()
                 .tabItem { Label("Topics", systemImage: "list.bullet") }
+                .tag(1)
         }
+        .onReceive(NotificationCenter.default.publisher(for: .distillNavigateToDigest)) { _ in
+            selectedTab = 0
+        }
+        .task { await requestNotificationPermissionIfNeeded() }
+    }
+
+    private func requestNotificationPermissionIfNeeded() async {
+        let settings = await UNUserNotificationCenter.current().notificationSettings()
+        guard settings.authorizationStatus == .notDetermined else { return }
+        await NotificationManager.shared.requestPermission()
     }
 
     // MARK: - Helpers

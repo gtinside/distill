@@ -24,7 +24,10 @@
 		A411A0A54DC7005CA09CA6A8 /* Digest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26860B911EA35D3C30D71D0E /* Digest.swift */; };
 		AA67D414447F0D511F8623E6 /* TopicsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8CD98C059C2477E82F6BA29 /* TopicsViewModel.swift */; };
 		ADF3A4D9F3A391549FBFE276 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E16A8442AACBEBADA5A7697 /* ContentView.swift */; };
+		B7D8257B0A3FE5FD77EEA3C2 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1CB0B4C3C88D187D5A014F5 /* NotificationManager.swift */; };
+		B7F7275EB273FC7AD6E4EACC /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 2453AAF951DE7DDB5D55393E /* FirebaseMessaging */; };
 		CC9F80A2CA3593A465C93DDC /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 09D962D1C49F65F4315DFAD4 /* Supabase */; };
+		E69D62BAF8E3AB62DF735B05 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 987B233A69488A80B0C4F610 /* GoogleService-Info.plist */; };
 		FF06EECCEFDA453183E070F7 /* SupabaseClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 906574CEF01A646C5D6F364E /* SupabaseClient.swift */; };
 /* End PBXBuildFile section */
 
@@ -44,6 +47,8 @@
 		8DA1B226D05AE8D0BD614226 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		906574CEF01A646C5D6F364E /* SupabaseClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseClient.swift; sourceTree = "<group>"; };
 		90F80305910BA176015D4DAD /* AddTopicSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddTopicSheet.swift; sourceTree = "<group>"; };
+		987B233A69488A80B0C4F610 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		A1CB0B4C3C88D187D5A014F5 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 		C67C856264305EBAF69F8842 /* DigestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DigestView.swift; sourceTree = "<group>"; };
 		D8CD98C059C2477E82F6BA29 /* TopicsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopicsViewModel.swift; sourceTree = "<group>"; };
 		EDF7FBE8721585EADFF41737 /* DistillApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DistillApp.swift; sourceTree = "<group>"; };
@@ -58,6 +63,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CC9F80A2CA3593A465C93DDC /* Supabase in Frameworks */,
+				B7F7275EB273FC7AD6E4EACC /* FirebaseMessaging in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -145,6 +151,7 @@
 				FBF4FFFCC0AA4936F18C4684 /* Digest */,
 				1299CCB4B12C8F8BE92EAFDC /* Models */,
 				13B8EFED8E3F20D6EE893D1D /* Networking */,
+				7052E49E5C38D8F91BC2F5C0 /* Notifications */,
 				6B9888BF61608766311AC639 /* Topics */,
 				4B83EF233A0BEFECB071F61D /* Views */,
 			);
@@ -178,6 +185,14 @@
 			path = Digest;
 			sourceTree = "<group>";
 		};
+		7052E49E5C38D8F91BC2F5C0 /* Notifications */ = {
+			isa = PBXGroup;
+			children = (
+				A1CB0B4C3C88D187D5A014F5 /* NotificationManager.swift */,
+			);
+			path = Notifications;
+			sourceTree = "<group>";
+		};
 		72D91E1E055134D55B33F8FB /* Auth */ = {
 			isa = PBXGroup;
 			children = (
@@ -190,6 +205,7 @@
 			isa = PBXGroup;
 			children = (
 				EFEAEFA04F81BD9B45FF6DEC /* Distill.entitlements */,
+				987B233A69488A80B0C4F610 /* GoogleService-Info.plist */,
 				53507A771E3856E1AAF1AF85 /* Info.plist */,
 			);
 			name = Resources;
@@ -213,6 +229,7 @@
 			buildConfigurationList = 2633ACC6C06582A2D763DED0 /* Build configuration list for PBXNativeTarget "Distill" */;
 			buildPhases = (
 				81A04F4DE9C66048AD371049 /* Sources */,
+				E07E463ED66036BC3D22AFBE /* Resources */,
 				3BBDB466F3D5E2357837148A /* Frameworks */,
 			);
 			buildRules = (
@@ -222,6 +239,7 @@
 			name = Distill;
 			packageProductDependencies = (
 				09D962D1C49F65F4315DFAD4 /* Supabase */,
+				2453AAF951DE7DDB5D55393E /* FirebaseMessaging */,
 			);
 			productName = Distill;
 			productReference = 8BA3A62496D3F1DAF7466BDB /* Distill.app */;
@@ -251,6 +269,7 @@
 			mainGroup = 1CADF2F33F54A46EFABC305C;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				BEBFEB247FE5DFF9DE24CA66 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				685472F831220D635FFC61AA /* XCRemoteSwiftPackageReference "supabase-swift" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -262,6 +281,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		E07E463ED66036BC3D22AFBE /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E69D62BAF8E3AB62DF735B05 /* GoogleService-Info.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		81A04F4DE9C66048AD371049 /* Sources */ = {
@@ -276,6 +306,7 @@
 				7CD9110D032FF6EF855A47FC /* DigestView.swift in Sources */,
 				5FEB64F9A72795410D640506 /* DigestViewModel.swift in Sources */,
 				6FB40CCCAD249C3C7CAAA5DE /* DistillApp.swift in Sources */,
+				B7D8257B0A3FE5FD77EEA3C2 /* NotificationManager.swift in Sources */,
 				4F46AE119D2C46B18128C386 /* OfflineCacheModule.swift in Sources */,
 				3FAA992CD9F8D01FAFA9A1A3 /* OnboardingDeliveryScreen.swift in Sources */,
 				257DFBFEE8706E76B239F9EC /* OnboardingTopicsScreen.swift in Sources */,
@@ -483,6 +514,14 @@
 				minimumVersion = 2.0.0;
 			};
 		};
+		BEBFEB247FE5DFF9DE24CA66 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -490,6 +529,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 685472F831220D635FFC61AA /* XCRemoteSwiftPackageReference "supabase-swift" */;
 			productName = Supabase;
+		};
+		2453AAF951DE7DDB5D55393E /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BEBFEB247FE5DFF9DE24CA66 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
