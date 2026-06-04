@@ -21,6 +21,7 @@
 		7CD9110D032FF6EF855A47FC /* DigestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C67C856264305EBAF69F8842 /* DigestView.swift */; };
 		8248755E0CD08370C5ED7F3D /* AddTopicSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90F80305910BA176015D4DAD /* AddTopicSheet.swift */; };
 		8CFAF5F706694EA73E43E5A5 /* Topic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 635534EF23568E941E29B969 /* Topic.swift */; };
+		8EB93F322B13145CDC0B363A /* Secrets.xcconfig.example in Resources */ = {isa = PBXBuildFile; fileRef = F733B18C4BCCB6BAB85BA9DD /* Secrets.xcconfig.example */; };
 		A411A0A54DC7005CA09CA6A8 /* Digest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26860B911EA35D3C30D71D0E /* Digest.swift */; };
 		AA67D414447F0D511F8623E6 /* TopicsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8CD98C059C2477E82F6BA29 /* TopicsViewModel.swift */; };
 		ADF3A4D9F3A391549FBFE276 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E16A8442AACBEBADA5A7697 /* ContentView.swift */; };
@@ -43,6 +44,7 @@
 		586BC22178583FB51E312D14 /* DigestViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DigestViewModel.swift; sourceTree = "<group>"; };
 		635534EF23568E941E29B969 /* Topic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Topic.swift; sourceTree = "<group>"; };
 		7E16A8442AACBEBADA5A7697 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		7EA72B1731E734D38DEA658F /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 		8BA3A62496D3F1DAF7466BDB /* Distill.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Distill.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8DA1B226D05AE8D0BD614226 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		906574CEF01A646C5D6F364E /* SupabaseClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseClient.swift; sourceTree = "<group>"; };
@@ -55,6 +57,7 @@
 		EED7C38CB3FC8F037C9894A3 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
 		EFEAEFA04F81BD9B45FF6DEC /* Distill.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Distill.entitlements; sourceTree = "<group>"; };
 		F63DDD6B41F0BCD8DF40B55C /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
+		F733B18C4BCCB6BAB85BA9DD /* Secrets.xcconfig.example */ = {isa = PBXFileReference; path = Secrets.xcconfig.example; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -207,6 +210,8 @@
 				EFEAEFA04F81BD9B45FF6DEC /* Distill.entitlements */,
 				987B233A69488A80B0C4F610 /* GoogleService-Info.plist */,
 				53507A771E3856E1AAF1AF85 /* Info.plist */,
+				7EA72B1731E734D38DEA658F /* Secrets.xcconfig */,
+				F733B18C4BCCB6BAB85BA9DD /* Secrets.xcconfig.example */,
 			);
 			name = Resources;
 			path = Distill/Resources;
@@ -288,6 +293,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				E69D62BAF8E3AB62DF735B05 /* GoogleService-Info.plist in Resources */,
+				8EB93F322B13145CDC0B363A /* Secrets.xcconfig.example in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -325,6 +331,7 @@
 /* Begin XCBuildConfiguration section */
 		12622BA68BDA8DB62E48DC4C /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7EA72B1731E734D38DEA658F /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Distill/Resources/Distill.entitlements;
@@ -408,6 +415,7 @@
 		};
 		583D3CEB111B3259BE1807F0 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7EA72B1731E734D38DEA658F /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Distill/Resources/Distill.entitlements;

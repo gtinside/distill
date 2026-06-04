@@ -33,6 +33,9 @@ targets:
         com.apple.developer.applesignin:
           - Default
         aps-environment: development
+    configFiles:
+      Debug: Distill/Resources/Secrets.xcconfig
+      Release: Distill/Resources/Secrets.xcconfig
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.gtinside.distill
@@ -43,6 +46,8 @@ targets:
       path: Distill/Resources/Info.plist
       properties:
         CFBundleDisplayName: Distill
+        SUPABASE_URL: $(SUPABASE_URL)
+        SUPABASE_ANON_KEY: $(SUPABASE_ANON_KEY)
         UILaunchScreen:
           UIColorName: ""
         UISupportedInterfaceOrientations:

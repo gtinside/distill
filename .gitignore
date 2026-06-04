@@ -36,3 +36,5 @@ DerivedData/
 *.dSYM.zip
 *.dSYM
 Pods/
+ios/Distill/Resources/Secrets.xcconfig
+ios/Distill/Resources/GoogleService-Info.plist
