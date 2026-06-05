@@ -1,6 +1,7 @@
 """Distill API — FastAPI application."""
 from __future__ import annotations
 
+import os
 from datetime import datetime, timezone, timedelta
 
 from fastapi import FastAPI, HTTPException, Request
@@ -19,16 +20,18 @@ class TopicUpdate(BaseModel):
 
 
 class AuthMiddleware(BaseHTTPMiddleware):
-    """Validates Supabase JWTs (Bearer) or falls back to X-User-Id for tests."""
+    """Validates Supabase JWTs via local decode (tests) or Supabase Auth API (production)."""
 
     def __init__(self, app, jwt_secret: str = ""):
         super().__init__(app)
         self._jwt_secret = jwt_secret
+        self._supabase_url = os.environ.get("SUPABASE_URL", "")
+        self._anon_key = os.environ.get("SUPABASE_ANON_KEY", os.environ.get("SUPABASE_SERVICE_ROLE_KEY", ""))
 
     async def dispatch(self, request: Request, call_next):
         if request.url.path == "/health":
             return await call_next(request)
-        user_id = self._extract_user_id(request)
+        user_id = await self._extract_user_id(request)
         if not user_id:
             return Response(
                 content='{"detail":"Unauthorized"}',
@@ -38,21 +41,47 @@ class AuthMiddleware(BaseHTTPMiddleware):
         request.state.user_id = user_id
         return await call_next(request)
 
-    def _extract_user_id(self, request: Request) -> str | None:
+    async def _extract_user_id(self, request: Request) -> str | None:
         auth = request.headers.get("authorization", "")
         if auth.startswith("Bearer "):
-            return self._decode_jwt(auth[7:])
+            token = auth[7:]
+            # Try local JWT validation first (fast, works for test tokens)
+            user_id = self._decode_jwt_local(token)
+            if user_id:
+                return user_id
+            # Fall back to Supabase Auth API (works for real Apple-signed sessions)
+            return await self._validate_via_supabase(token)
         return request.headers.get("x-user-id") or None
 
-    def _decode_jwt(self, token: str) -> str | None:
+    def _decode_jwt_local(self, token: str) -> str | None:
         if not self._jwt_secret:
             return None
         try:
             import jwt
-            payload = jwt.decode(token, self._jwt_secret, algorithms=["HS256"], options={"verify_aud": False})
+            payload = jwt.decode(
+                token, self._jwt_secret, algorithms=["HS256"],
+                options={"verify_aud": False},
+            )
             return payload.get("sub")
         except Exception:
             return None
+
+    async def _validate_via_supabase(self, token: str) -> str | None:
+        if not self._supabase_url:
+            return None
+        try:
+            import httpx
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(
+                    f"{self._supabase_url}/auth/v1/user",
+                    headers={"Authorization": f"Bearer {token}", "apikey": self._anon_key},
+                    timeout=5.0,
+                )
+            if resp.status_code == 200:
+                return resp.json().get("id")
+        except Exception:
+            pass
+        return None
 
 
 def create_app(db, orchestrator, jwt_secret: str = "") -> FastAPI:
