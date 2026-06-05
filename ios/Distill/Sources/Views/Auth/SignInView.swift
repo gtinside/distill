@@ -4,6 +4,7 @@ import SwiftUI
 struct SignInView: View {
     @EnvironmentObject var authManager: AuthManager
     @State private var error: Error?
+    @State private var debugLoading = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -37,7 +38,34 @@ struct SignInView: View {
             .signInWithAppleButtonStyle(.black)
             .frame(height: 50)
             .padding(.horizontal, 40)
-            .padding(.bottom, 60)
+
+            #if DEBUG
+            Button {
+                Task {
+                    debugLoading = true
+                    defer { debugLoading = false }
+                    do {
+                        try await supabase.auth.signIn(
+                            email: "test@distill.app",
+                            password: "distill-test-2026"
+                        )
+                    } catch {
+                        self.error = error
+                    }
+                }
+            } label: {
+                if debugLoading {
+                    ProgressView().tint(.secondary)
+                } else {
+                    Text("Skip Sign In (Simulator)")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.top, 16)
+            #endif
+
+            Spacer().frame(height: 60)
         }
         .alert(
             "Sign In Failed",
