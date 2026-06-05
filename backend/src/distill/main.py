@@ -11,6 +11,7 @@ from distill.db import get_client
 from distill.firebase_client import FirebaseFCMClient
 from distill.push_notification_service import PushNotificationService
 from distill.scheduler_worker import SchedulerWorker
+from distill.supabase_db import SupabaseDb
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -67,7 +68,7 @@ def main():
     supabase = get_client()
     jwt_secret = os.environ.get("SUPABASE_JWT_SECRET", "")
 
-    api_app = create_app(db=supabase, orchestrator=None, jwt_secret=jwt_secret)
+    api_app = create_app(db=SupabaseDb(supabase), orchestrator=None, jwt_secret=jwt_secret)
 
     threading.Thread(target=scheduler_loop, args=(supabase,), daemon=True).start()
 
