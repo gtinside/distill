@@ -49,7 +49,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
             return None
         try:
             import jwt
-            payload = jwt.decode(token, self._jwt_secret, algorithms=["HS256"])
+            payload = jwt.decode(token, self._jwt_secret, algorithms=["HS256"], options={"verify_aud": False})
             return payload.get("sub")
         except Exception:
             return None
