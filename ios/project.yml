@@ -46,7 +46,7 @@ targets:
       path: Distill/Resources/Info.plist
       properties:
         CFBundleDisplayName: Distill
-        SUPABASE_URL: $(SUPABASE_URL)
+        SUPABASE_HOST: $(SUPABASE_HOST)
         SUPABASE_ANON_KEY: $(SUPABASE_ANON_KEY)
         UILaunchScreen:
           UIColorName: ""

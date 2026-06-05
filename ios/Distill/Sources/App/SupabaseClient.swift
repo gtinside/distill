@@ -1,12 +1,13 @@
 import Foundation
 import Supabase
 
-// SUPABASE_URL and SUPABASE_ANON_KEY are injected via Secrets.xcconfig (gitignored).
-// See Secrets.xcconfig.example for the required format.
+// SUPABASE_HOST and SUPABASE_ANON_KEY are injected via Secrets.xcconfig (gitignored).
+// URL protocol is prepended here to avoid xcconfig treating // as a comment.
 private let supabaseURL: URL = {
-    guard let raw = Bundle.main.object(forInfoDictionaryKey: "SUPABASE_URL") as? String,
-          let url = URL(string: raw) else {
-        fatalError("SUPABASE_URL missing from Info.plist — check Secrets.xcconfig")
+    guard let host = Bundle.main.object(forInfoDictionaryKey: "SUPABASE_HOST") as? String,
+          !host.isEmpty,
+          let url = URL(string: "https://\(host)") else {
+        fatalError("SUPABASE_HOST missing from Info.plist — check Secrets.xcconfig")
     }
     return url
 }()

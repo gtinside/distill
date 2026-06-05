@@ -1,11 +1,14 @@
 import Foundation
 
 struct APIClient {
-    #if DEBUG
-    static let baseURL = "http://localhost:8000"
-    #else
-    static let baseURL = "https://distill-production-adec.up.railway.app"
-    #endif
+    // Always use Railway — simulator can reach it and avoids needing a local server.
+    // Override by setting DISTILL_API_URL environment variable in the Xcode scheme.
+    static let baseURL: String = {
+        if let override = ProcessInfo.processInfo.environment["DISTILL_API_URL"] {
+            return override
+        }
+        return "https://distill-production-adec.up.railway.app"
+    }()
 
     private let token: String
 
