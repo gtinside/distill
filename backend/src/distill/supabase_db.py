@@ -21,13 +21,7 @@ class SupabaseDb:
         return result.data or []
 
     def count_topics(self, user_id: str) -> int:
-        result = (
-            self._db.table("topics")
-            .select("id", count="exact")
-            .eq("user_id", user_id)
-            .execute()
-        )
-        return result.count or 0
+        return len(self.get_topics(user_id))
 
     def create_topic(self, user_id: str, phrase: str) -> dict:
         count = self.count_topics(user_id)
@@ -43,10 +37,9 @@ class SupabaseDb:
             self._db.table("topics")
             .select("*")
             .eq("id", topic_id)
-            .maybe_single()
             .execute()
         )
-        return result.data
+        return result.data[0] if result.data else None
 
     def update_topic(self, topic_id: str, data: dict) -> dict:
         result = (
@@ -102,10 +95,9 @@ class SupabaseDb:
             self._db.table("users")
             .select("delivery_time, device_token")
             .eq("id", user_id)
-            .maybe_single()
             .execute()
         )
-        return result.data or {}
+        return result.data[0] if result.data else {}
 
     def update_settings(self, user_id: str, data: dict) -> dict:
         result = (
