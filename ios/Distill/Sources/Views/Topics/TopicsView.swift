@@ -65,9 +65,9 @@ struct TopicsView: View {
         }
         .alert("Error", isPresented: Binding(
             get: { viewModel.error != nil },
-            set: { if !$0 { viewModel.error = nil } }
+            set: { if !$0 { Task { @MainActor in viewModel.error = nil } } }
         )) {
-            Button("OK") { viewModel.error = nil }
+            Button("OK") { }
         } message: {
             Text(viewModel.error?.localizedDescription ?? "")
         }

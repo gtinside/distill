@@ -66,6 +66,14 @@ class StubDb:
             None,
         )
 
+    def update_topic_card(self, card_id: str, data: dict) -> dict:
+        if self.digest:
+            for card in self.digest.get("topic_cards", []):
+                if card.get("id") == card_id:
+                    card.update(data)
+                    return card
+        return data
+
     # Settings ----------------------------------------------------------------
 
     def get_settings(self, user_id: str) -> dict:
@@ -80,25 +88,20 @@ class StubOrchestrator:
     """In-memory stub for DigestOrchestrator."""
 
     def __init__(self, result=None, refresh_result=None):
-        self.called_with: str | None = None
-        self._result = result or {"topic_cards": []}
-        self._refresh_result = refresh_result or {
-            "id": "card-1",
-            "topic_id": "topic-1",
-            "tldr": "Refreshed summary",
-            "bullets": [],
-            "sources": [],
-            "status": "ok",
-            "last_refreshed_at": None,
-            "display_order": 0,
-        }
+        from distill.digest_orchestrator import Digest, TopicCardResult
+        self.called_generate_with: str | None = None
+        self.called_refresh_with = None
+        self._result = result or Digest(topic_cards=[])
+        self._refresh_result = refresh_result or TopicCardResult(
+            topic_id="topic-1", card=None, status="ok"
+        )
 
     def generate(self, user_id: str):
-        self.called_with = user_id
+        self.called_generate_with = user_id
         return self._result
 
-    def refresh_card(self, user_id: str, topic_id: str):
-        self.called_with = user_id
+    def refresh_card(self, topic_id: str, phrase: str):
+        self.called_refresh_with = (topic_id, phrase)
         return self._refresh_result
 
 
@@ -259,14 +262,16 @@ def test_get_digest():
 # ---------------------------------------------------------------------------
 
 def test_generate_digest():
-    orchestrator = StubOrchestrator(result={"topic_cards": [{"topic_id": "t42", "status": "ok"}]})
+    from distill.digest_orchestrator import Digest, TopicCardResult
+    result = Digest(topic_cards=[TopicCardResult(topic_id="t42", card=None, status="ok")])
+    orchestrator = StubOrchestrator(result=result)
     client = make_client(orchestrator=orchestrator)
 
     resp = client.post("/digest/generate", headers={"X-User-Id": "user-99"})
 
     assert resp.status_code == 200
     assert resp.json()["topic_cards"][0]["topic_id"] == "t42"
-    assert orchestrator.called_with == "user-99"
+    assert orchestrator.called_generate_with == "user-99"
 
 
 # ---------------------------------------------------------------------------
@@ -402,7 +407,8 @@ def test_invalid_bearer_jwt_returns_401():
 def test_refresh_topic_card_success():
     from datetime import datetime, timezone, timedelta
     db = StubDb()
-    # Card whose last_refreshed_at is well over 60 minutes ago
+    # Seed a topic so the endpoint can look up the phrase
+    db.topics = [{"id": "topic-1", "user_id": "user-1", "phrase": "space exploration", "display_order": 0}]
     old_refresh = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat()
     db.digest = {
         "topic_cards": [
@@ -424,7 +430,7 @@ def test_refresh_topic_card_success():
 
     assert resp.status_code == 200
     assert resp.json()["status"] == "ok"
-    assert orchestrator.called_with == "user-1"
+    assert orchestrator.called_refresh_with == ("topic-1", "space exploration")
 
 
 # ---------------------------------------------------------------------------

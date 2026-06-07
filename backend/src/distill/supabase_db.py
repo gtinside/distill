@@ -69,6 +69,8 @@ class SupabaseDb:
         return result.data[0] if result.data else None
 
     def save_digest(self, user_id: str, digest: dict) -> dict:
+        # One digest per user — delete any existing one (topic_cards cascade)
+        self._db.table("digests").delete().eq("user_id", user_id).execute()
         row = self._db.table("digests").insert({"user_id": user_id}).execute().data[0]
         cards = digest.get("topic_cards", [])
         if cards:
@@ -76,6 +78,15 @@ class SupabaseDb:
                 card["digest_id"] = row["id"]
             self._db.table("topic_cards").insert(cards).execute()
         return {**row, "topic_cards": cards}
+
+    def update_topic_card(self, card_id: str, data: dict) -> dict:
+        result = (
+            self._db.table("topic_cards")
+            .update(data)
+            .eq("id", card_id)
+            .execute()
+        )
+        return result.data[0]
 
     def get_topic_card(self, user_id: str, topic_id: str) -> dict | None:
         digest = self.get_digest(user_id)

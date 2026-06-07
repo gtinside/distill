@@ -1,5 +1,4 @@
 import Foundation
-import Combine
 
 @MainActor
 final class DigestViewModel: ObservableObject {
@@ -10,19 +9,9 @@ final class DigestViewModel: ObservableObject {
     @Published var isOffline: Bool = false
 
     private var api: APIClient?
-    private var cancellables = Set<AnyCancellable>()
 
     func load(token: String) async {
         api = APIClient(token: token)
-
-        // Observe network status
-        NetworkMonitor.shared.$isOnline
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] online in
-                self?.isOffline = !online
-            }
-            .store(in: &cancellables)
-
         await fetch()
     }
 
@@ -30,6 +19,8 @@ final class DigestViewModel: ObservableObject {
         guard let api else { return }
         isLoading = true
         defer { isLoading = false }
+
+        isOffline = !NetworkMonitor.shared.isOnline
 
         if !isOffline {
             // Online path: fetch from API

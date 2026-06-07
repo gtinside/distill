@@ -17,17 +17,34 @@ logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 
-def _build_scheduler(supabase) -> SchedulerWorker:
+def _build_orchestrator(db):
     from distill.digest_orchestrator import DigestOrchestrator
-    from distill.synthesis_engine import SynthesisEngine
+    from distill.synthesis_engine import SynthesisEngine, ExaResult
     from exa_py import Exa
     import anthropic
 
+    exa_client = Exa(os.environ["EXA_API_KEY"])
     synthesis = SynthesisEngine(
-        exa_client=Exa(os.environ["EXA_API_KEY"]),
         claude_client=anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"]),
     )
-    orchestrator = DigestOrchestrator(synthesis_engine=synthesis)
+
+    def fetch_topics(user_id: str):
+        topics = db.get_topics(user_id)
+        return [(t["id"], t["phrase"]) for t in topics]
+
+    def fetch_sources(phrase: str):
+        results = exa_client.search_and_contents(phrase, num_results=5, text=True)
+        return [ExaResult(title=r.title or "", url=r.url, text=r.text or "")
+                for r in results.results]
+
+    return DigestOrchestrator(
+        fetch_topics=fetch_topics,
+        fetch_sources=fetch_sources,
+        synthesis_engine=synthesis,
+    )
+
+
+def _build_scheduler(supabase, orchestrator) -> SchedulerWorker:
     push_service = PushNotificationService(fcm_client=FirebaseFCMClient())
 
     def fetch_due_users():
@@ -38,7 +55,8 @@ def _build_scheduler(supabase) -> SchedulerWorker:
                 if row.get("delivery_time", "")[:5] == now]
 
     def persist_digest(user_id: str, digest: dict):
-        supabase.table("digests").insert({"user_id": user_id}).execute()
+        from distill.supabase_db import SupabaseDb
+        SupabaseDb(supabase).save_digest(user_id, digest)
 
     return SchedulerWorker(
         fetch_due_users=fetch_due_users,
@@ -48,11 +66,11 @@ def _build_scheduler(supabase) -> SchedulerWorker:
     )
 
 
-def scheduler_loop(supabase):
+def scheduler_loop(supabase, orchestrator):
     # Delay scheduler start so API can pass healthcheck first
     time.sleep(10)
     try:
-        worker = _build_scheduler(supabase)
+        worker = _build_scheduler(supabase, orchestrator)
     except Exception as e:
         log.error(f"[scheduler] failed to initialise: {e}")
         return
@@ -68,9 +86,11 @@ def main():
     supabase = get_client()
     jwt_secret = os.environ.get("SUPABASE_JWT_SECRET", "")
 
-    api_app = create_app(db=SupabaseDb(supabase), orchestrator=None, jwt_secret=jwt_secret)
+    db = SupabaseDb(supabase)
+    orchestrator = _build_orchestrator(db)
+    api_app = create_app(db=db, orchestrator=orchestrator, jwt_secret=jwt_secret)
 
-    threading.Thread(target=scheduler_loop, args=(supabase,), daemon=True).start()
+    threading.Thread(target=scheduler_loop, args=(supabase, orchestrator), daemon=True).start()
 
     port = int(os.environ.get("PORT", 8000))
     log.info(f"Starting API on port {port}")

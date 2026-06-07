@@ -132,11 +132,24 @@ def create_app(db, orchestrator, jwt_secret: str = "") -> FastAPI:
 
     @app.get("/digest")
     def get_digest(request: Request):
-        return request.app.state.db.get_digest(request.state.user_id)
+        result = request.app.state.db.get_digest(request.state.user_id)
+        if result is None:
+            raise HTTPException(status_code=404, detail="No digest found")
+        return result
 
     @app.post("/digest/generate")
     def generate_digest(request: Request):
-        return request.app.state.orchestrator.generate(request.state.user_id)
+        user_id = request.state.user_id
+        result = request.app.state.orchestrator.generate(user_id)
+        cards = []
+        for cr in result.topic_cards:
+            card: dict = {"topic_id": cr.topic_id, "status": cr.status}
+            if cr.card:
+                card["tldr"] = cr.card.tldr
+                card["bullets"] = cr.card.bullets
+                card["sources"] = [{"title": s.title, "url": s.url} for s in cr.card.sources]
+            cards.append(card)
+        return request.app.state.db.save_digest(user_id, {"topic_cards": cards})
 
     @app.post("/digest/topics/{topic_id}/refresh")
     def refresh_topic_card(topic_id: str, request: Request):
@@ -160,7 +173,19 @@ def create_app(db, orchestrator, jwt_secret: str = "") -> FastAPI:
                             "retry_after": retry_after.isoformat(),
                         },
                     )
-        return request.app.state.orchestrator.refresh_card(user_id, topic_id)
+        topic = request.app.state.db.get_topic(topic_id)
+        if not topic:
+            raise HTTPException(status_code=404, detail="Topic not found")
+        cr = request.app.state.orchestrator.refresh_card(topic_id, topic["phrase"])
+        now_iso = datetime.now(timezone.utc).isoformat()
+        card_data: dict = {"status": cr.status, "last_refreshed_at": now_iso}
+        if cr.card:
+            card_data["tldr"] = cr.card.tldr
+            card_data["bullets"] = cr.card.bullets
+            card_data["sources"] = [{"title": s.title, "url": s.url} for s in cr.card.sources]
+        if not card:
+            raise HTTPException(status_code=404, detail="No existing card — generate a digest first")
+        return request.app.state.db.update_topic_card(card["id"], card_data)
 
     @app.patch("/settings")
     async def patch_settings(request: Request):

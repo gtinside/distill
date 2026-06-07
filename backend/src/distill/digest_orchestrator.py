@@ -26,6 +26,9 @@ class DigestOrchestrator:
         topics = self._fetch_topics(user_id)
         return Digest(topic_cards=[self._generate_card(tid, phrase) for tid, phrase in topics])
 
+    def refresh_card(self, topic_id: str, phrase: str) -> TopicCardResult:
+        return self._generate_card(topic_id, phrase)
+
     def _generate_card(self, topic_id: str, phrase: str) -> TopicCardResult:
         for _ in range(self._MAX_RETRIES):
             try:
