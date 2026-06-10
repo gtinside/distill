@@ -4,7 +4,7 @@ import { isDemoMode } from "@/lib/demo";
 
 const PUBLIC_PATHS = ["/signin", "/auth"];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // Demo mode: no auth, no Supabase — let everything through.
   if (isDemoMode()) {
     return NextResponse.next();

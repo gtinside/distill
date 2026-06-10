@@ -187,6 +187,10 @@ def create_app(db, orchestrator, jwt_secret: str = "") -> FastAPI:
             raise HTTPException(status_code=404, detail="No existing card — generate a digest first")
         return request.app.state.db.update_topic_card(card["id"], card_data)
 
+    @app.get("/settings")
+    def get_settings(request: Request):
+        return request.app.state.db.get_settings(request.state.user_id)
+
     @app.patch("/settings")
     async def patch_settings(request: Request):
         body = await request.json()
