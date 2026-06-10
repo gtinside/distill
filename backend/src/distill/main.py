@@ -8,9 +8,10 @@ import uvicorn
 
 from distill.api import create_app
 from distill.db import get_client
-from distill.firebase_client import FirebaseFCMClient
-from distill.push_notification_service import PushNotificationService
+from distill.email_digest_service import EmailDigestService
+from distill.resend_client import ResendClient
 from distill.scheduler_worker import SchedulerWorker
+from distill.scheduling import user_is_due
 from distill.supabase_db import SupabaseDb
 
 logging.basicConfig(level=logging.INFO)
@@ -45,24 +46,43 @@ def _build_orchestrator(db):
 
 
 def _build_scheduler(supabase, orchestrator) -> SchedulerWorker:
-    push_service = PushNotificationService(fcm_client=FirebaseFCMClient())
+    db = SupabaseDb(supabase)
+
+    resend = ResendClient(
+        api_key=os.environ["RESEND_API_KEY"],
+        from_email=os.environ["RESEND_FROM_EMAIL"],
+    )
+
+    def fetch_recipient(user_id: str) -> dict:
+        row = supabase.table("users").select("email").eq("id", user_id).execute()
+        email = row.data[0]["email"] if row.data else None
+        topic_phrases = [t["phrase"] for t in db.get_topics(user_id)]
+        return {"email": email, "topic_phrases": topic_phrases}
+
+    email_service = EmailDigestService(
+        email_client=resend,
+        fetch_recipient=fetch_recipient,
+        app_base_url=os.environ.get("APP_BASE_URL", "https://distill.app"),
+    )
 
     def fetch_due_users():
         from datetime import datetime, timezone
-        now = datetime.now(timezone.utc).strftime("%H:%M")
-        result = supabase.table("users").select("id, device_token").execute()
-        return [row["id"] for row in (result.data or [])
-                if row.get("delivery_time", "")[:5] == now]
+        now = datetime.now(timezone.utc)
+        result = supabase.table("users").select("id, delivery_time, timezone").execute()
+        return [
+            row["id"]
+            for row in (result.data or [])
+            if user_is_due(now, row.get("delivery_time", ""), row.get("timezone", "UTC"))
+        ]
 
-    def persist_digest(user_id: str, digest: dict):
-        from distill.supabase_db import SupabaseDb
-        SupabaseDb(supabase).save_digest(user_id, digest)
+    def persist_digest(user_id: str, digest):
+        db.save_digest(user_id, digest)
 
     return SchedulerWorker(
         fetch_due_users=fetch_due_users,
         orchestrator=orchestrator,
         persist_digest=persist_digest,
-        push_service=push_service,
+        email_service=email_service,
     )
 
 
