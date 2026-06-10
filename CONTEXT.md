@@ -17,7 +17,7 @@ A user-defined area of interest expressed as a free-text phrase (e.g. "Fed polic
 _Avoid_: Category, tag, interest, keyword
 
 **User**:
-A person with a server-side account (authenticated via Sign in with Apple) who defines Topics and reads Digests. Identity is stable across reinstalls and devices.
+A person with a server-side account (authenticated via magic-link email through Supabase Auth) who defines Topics and reads Digests. Identity is stable across devices.
 _Avoid_: Account, subscriber, reader
 
 **Source**:
@@ -25,5 +25,5 @@ A content origin the backend fetches from for a given Topic — either a search 
 _Avoid_: Feed, channel, subscription
 
 **Delivery Time**:
-The user-configured local time at which the backend generates and pushes the daily Digest.
+The user-configured time (in the User's stored timezone) at which the backend generates and emails the daily Digest.
 _Avoid_: Schedule, notification time, send time
