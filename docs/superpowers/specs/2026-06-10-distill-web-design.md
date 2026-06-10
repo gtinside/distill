@@ -165,9 +165,9 @@ A new User, Maya:
   (push → email, Sign in with Apple → magic link, Next.js BFF).
 - Update `CONTEXT.md` so "push notification" language becomes "email delivery".
 
-## Open Decisions
+## Decisions Made
 
-- **Email provider**: defaulting to Resend; confirm vs Postmark / SendGrid / SMTP.
+- **Email provider**: **Resend** (confirmed 2026-06-10).
 
 ## Risks
 
