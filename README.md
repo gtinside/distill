@@ -23,7 +23,14 @@ for why.
 
 ---
 
-## Quick start (zero config)
+## Running locally
+
+### Prerequisites
+
+- **Node.js 18.18+** (Node 22 recommended) and npm — for the web app
+- **Python 3.11+** — only needed for the real backend (skip for demo mode)
+
+### Option A — Demo mode (recommended, zero config)
 
 The web app ships with a **demo mode** — seeded sample data and no auth — so you
 can run the whole thing with no backend, database, or API keys.
@@ -34,10 +41,42 @@ npm install
 npm run dev
 ```
 
-Open <http://localhost:3000>. That's it — you're looking at a working Digest.
+Open <http://localhost:3000>. That's it — you're looking at a working Digest,
+with Topics, onboarding, and per-card refresh all functional against in-memory
+sample data.
 
 > Demo mode is the default whenever no Supabase project is configured
 > (`NEXT_PUBLIC_SUPABASE_URL` unset), so a fresh deploy works out of the box too.
+> To force it explicitly, set `NEXT_PUBLIC_DEMO_MODE=true` in `web/.env.local`.
+
+### Option B — Full stack (real auth, synthesis, and email)
+
+Run the backend and web app together against Supabase. Two terminals:
+
+```bash
+# Terminal 1 — backend API + scheduler on :8000
+cd backend
+python3 -m pip install -e ".[dev]"
+cp ../.env.example ../.env        # fill in the values (see Environment variables)
+python3 -m distill.main
+
+# Terminal 2 — web app on :3000, pointed at the local backend
+cd web
+cp .env.example .env.local        # set NEXT_PUBLIC_DEMO_MODE=false + Supabase vars + DISTILL_API_URL=http://localhost:8000
+npm install
+npm run dev
+```
+
+Then apply the database migrations and enable magic-link auth — see
+[Full local setup](#full-local-setup-with-real-backend) below for the Supabase
+steps and the complete environment-variable reference.
+
+### Run the tests
+
+```bash
+cd backend && python3 -m pytest -q     # backend unit tests
+cd web && npm run build && npm run lint # web typecheck + build + lint
+```
 
 ---
 
