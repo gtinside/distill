@@ -104,7 +104,7 @@ class SupabaseDb:
     def get_settings(self, user_id: str) -> dict:
         result = (
             self._db.table("users")
-            .select("delivery_time, device_token")
+            .select("delivery_time, device_token, timezone")
             .eq("id", user_id)
             .execute()
         )

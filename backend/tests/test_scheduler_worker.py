@@ -21,7 +21,7 @@ def make_worker(
                 return generate_fn(user_id)
             return Digest()
 
-    class StubPushService:
+    class StubEmailService:
         def send(self, user_id, digest):
             if push_calls is not None:
                 push_calls.append((user_id, digest))
@@ -35,7 +35,7 @@ def make_worker(
         fetch_due_users=fetch_due_users,
         orchestrator=StubOrchestrator(),
         persist_digest=persist_digest,
-        push_service=StubPushService(),
+        email_service=StubEmailService(),
     ), _persist_calls
 
 
