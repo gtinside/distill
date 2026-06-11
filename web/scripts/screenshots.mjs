@@ -11,37 +11,47 @@ const OUT = path.resolve(
 );
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const viewport = { width: 1200, height: 900 };
 
 async function main() {
   const browser = await chromium.launch();
-  const page = await browser.newPage({
-    viewport: { width: 1200, height: 900 },
-    deviceScaleFactor: 2,
-  });
 
-  // Sign-in
-  await page.goto(`${BASE}/signin`, { waitUntil: "networkidle" });
+  // --- Anonymous context: logged-out front page + sign-in ---
+  const anon = await browser.newContext({ viewport, deviceScaleFactor: 2 });
+  const a = await anon.newPage();
+
+  await a.goto(`${BASE}/`, { waitUntil: "networkidle" });
+  await wait(500);
+  await a.screenshot({ path: `${OUT}/home-trending.png`, fullPage: true });
+
+  await a.goto(`${BASE}/signin`, { waitUntil: "networkidle" });
   await wait(300);
-  await page.screenshot({ path: `${OUT}/signin.png` });
+  await a.screenshot({ path: `${OUT}/signin.png` });
+  await anon.close();
 
-  // Onboarding — add a few example topics for a populated shot
-  await page.goto(`${BASE}/onboarding`, { waitUntil: "networkidle" });
+  // --- Signed-in demo context: enter demo, then capture blend + topics ---
+  const signed = await browser.newContext({ viewport, deviceScaleFactor: 2 });
+  const p = await signed.newPage();
+
+  await p.goto(`${BASE}/signin`, { waitUntil: "networkidle" });
+  await p.click('button:has-text("Continue to demo")');
+  await p.waitForURL(`${BASE}/`, { waitUntil: "networkidle" });
+  await wait(600);
+  await p.screenshot({ path: `${OUT}/digest.png`, fullPage: true });
+
+  await p.goto(`${BASE}/topics`, { waitUntil: "networkidle" });
+  await wait(400);
+  await p.screenshot({ path: `${OUT}/topics.png`, fullPage: true });
+
+  // Onboarding (reachable in demo) with a few topics staged
+  await p.goto(`${BASE}/onboarding`, { waitUntil: "networkidle" });
   for (const label of ["Fed policy", "EU AI regulation", "NBA trades"]) {
-    const chip = page.locator(`button:has-text("${label}")`).first();
+    const chip = p.locator(`button:has-text("${label}")`).first();
     if (await chip.count()) await chip.click();
   }
   await wait(300);
-  await page.screenshot({ path: `${OUT}/onboarding.png` });
-
-  // Digest feed (full page)
-  await page.goto(`${BASE}/digest`, { waitUntil: "networkidle" });
-  await wait(400);
-  await page.screenshot({ path: `${OUT}/digest.png`, fullPage: true });
-
-  // Topics + settings (full page)
-  await page.goto(`${BASE}/topics`, { waitUntil: "networkidle" });
-  await wait(400);
-  await page.screenshot({ path: `${OUT}/topics.png`, fullPage: true });
+  await p.screenshot({ path: `${OUT}/onboarding.png` });
+  await signed.close();
 
   await browser.close();
   console.log("Screenshots written to", OUT);

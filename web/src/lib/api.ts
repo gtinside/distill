@@ -4,8 +4,8 @@
 // 10-topic cap, refresh rate limit) live in FastAPI — this is a thin passthrough.
 
 import "server-only";
-import type { Digest, Settings, Topic, TopicCard } from "./types";
-import { demoState, isDemoMode } from "./demo";
+import type { Digest, Settings, Topic, TopicCard, TrendingCard } from "./types";
+import { DEMO_TRENDING, demoState, isDemoMode } from "./demo";
 import { getAccessToken } from "./supabase/server";
 
 const API_URL = process.env.DISTILL_API_URL ?? "http://localhost:8000";
@@ -124,6 +124,18 @@ export async function refreshCard(topicId: string): Promise<TopicCard> {
   }
   if (!res.ok) throw new Error("Refresh failed");
   return res.json();
+}
+
+// ---------------------------------------------------------------- Trending
+
+export async function getTrending(): Promise<TrendingCard[]> {
+  if (isDemoMode()) return DEMO_TRENDING;
+  const res = await fetch(`${API_URL}/trending`, { cache: "no-store" }).catch(
+    () => null
+  );
+  if (!res || !res.ok) return [];
+  const body = await res.json();
+  return (body?.cards ?? []) as TrendingCard[];
 }
 
 // ---------------------------------------------------------------- Settings

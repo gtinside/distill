@@ -27,6 +27,15 @@ export interface Topic {
   display_order: number;
 }
 
+export interface TrendingCard {
+  trending_topic_id: string;
+  phrase: string;
+  status: "ok" | "error";
+  tldr?: string;
+  bullets?: string[];
+  sources?: Source[];
+}
+
 export interface Settings {
   delivery_time: string; // "HH:MM"
   timezone: string; // IANA tz name

@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { isDemoMode } from "@/lib/demo";
+import { enterDemoAction } from "@/lib/actions";
 import { Button, Card, Logo } from "@/components/ui";
 
 export default function SignInPage() {
-  const router = useRouter();
   const demo = isDemoMode();
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
@@ -47,9 +46,11 @@ export default function SignInPage() {
                 You’re viewing the <strong>demo</strong>. No account needed —
                 jump straight in with seeded sample data.
               </p>
-              <Button className="w-full" onClick={() => router.push("/digest")}>
-                Continue to demo
-              </Button>
+              <form action={enterDemoAction}>
+                <Button type="submit" className="w-full">
+                  Continue to demo
+                </Button>
+              </form>
             </div>
           ) : status === "sent" ? (
             <div className="space-y-2 text-center">

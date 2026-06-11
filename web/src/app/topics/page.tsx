@@ -13,14 +13,18 @@ export default async function TopicsPage() {
       <NavBar active="topics" />
       <main className="mx-auto w-full max-w-2xl flex-1 space-y-6 px-4 py-6">
         <section>
-          <h1 className="mb-4 text-2xl font-semibold tracking-tight">Topics</h1>
+          <h1 className="mb-4 font-display text-3xl font-medium tracking-[-0.01em]">
+            Topics
+          </h1>
           <Card>
             <TopicsManager initial={topics} />
           </Card>
         </section>
 
         <section>
-          <h2 className="mb-4 text-lg font-semibold tracking-tight">Settings</h2>
+          <h2 className="mb-4 font-display text-xl font-medium tracking-[-0.01em]">
+            Settings
+          </h2>
           <Card>
             <SettingsPanel settings={settings} />
           </Card>
