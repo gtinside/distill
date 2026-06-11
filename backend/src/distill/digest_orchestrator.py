@@ -24,6 +24,9 @@ class DigestOrchestrator:
 
     def generate(self, user_id: str) -> Digest:
         topics = self._fetch_topics(user_id)
+        return self.generate_cards(topics)
+
+    def generate_cards(self, topics) -> Digest:
         return Digest(topic_cards=[self._generate_card(tid, phrase) for tid, phrase in topics])
 
     def refresh_card(self, topic_id: str, phrase: str) -> TopicCardResult:

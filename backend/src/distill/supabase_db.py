@@ -98,6 +98,54 @@ class SupabaseDb:
         )
 
     # ------------------------------------------------------------------
+    # Trending (global, world-readable)
+    # ------------------------------------------------------------------
+
+    def get_trending_topics(self) -> list[dict]:
+        result = (
+            self._db.table("trending_topics")
+            .select("id, phrase, rank")
+            .eq("active", True)
+            .order("rank")
+            .execute()
+        )
+        return result.data or []
+
+    def get_trending_cards(self) -> list[dict]:
+        result = (
+            self._db.table("trending_topics")
+            .select("id, phrase, rank, trending_cards(*)")
+            .eq("active", True)
+            .order("rank")
+            .execute()
+        )
+        cards = []
+        for topic in result.data or []:
+            joined = topic.get("trending_cards")
+            card = joined[0] if isinstance(joined, list) else joined
+            card = card or {}
+            cards.append(
+                {
+                    "trending_topic_id": topic["id"],
+                    "phrase": topic["phrase"],
+                    "status": card.get("status", "error"),
+                    "tldr": card.get("tldr"),
+                    "bullets": card.get("bullets"),
+                    "sources": card.get("sources"),
+                    "generated_at": card.get("generated_at"),
+                }
+            )
+        return cards
+
+    def save_trending_cards(self, cards) -> None:
+        for card in cards:
+            topic_id = card["trending_topic_id"]
+            self._db.table("trending_cards").delete().eq(
+                "trending_topic_id", topic_id
+            ).execute()
+            self._db.table("trending_cards").insert(card).execute()
+
+    # ------------------------------------------------------------------
     # Settings (users table)
     # ------------------------------------------------------------------
 

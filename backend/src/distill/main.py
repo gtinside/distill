@@ -86,6 +86,23 @@ def _build_scheduler(supabase, orchestrator) -> SchedulerWorker:
     )
 
 
+def generate_trending(db, orchestrator):
+    """Build/refresh the global trending Digest: synthesize a card per active
+    trending topic and upsert the results into trending_cards."""
+    topics = db.get_trending_topics()
+    digest = orchestrator.generate_cards([(t["id"], t["phrase"]) for t in topics])
+    cards = []
+    for cr in digest.topic_cards:
+        card = {"trending_topic_id": cr.topic_id, "status": cr.status}
+        if cr.card:
+            card["tldr"] = cr.card.tldr
+            card["bullets"] = cr.card.bullets
+            card["sources"] = [{"title": s.title, "url": s.url} for s in cr.card.sources]
+        cards.append(card)
+    db.save_trending_cards(cards)
+    return cards
+
+
 def scheduler_loop(supabase, orchestrator):
     # Delay scheduler start so API can pass healthcheck first
     time.sleep(10)
@@ -94,11 +111,25 @@ def scheduler_loop(supabase, orchestrator):
     except Exception as e:
         log.error(f"[scheduler] failed to initialise: {e}")
         return
+    db = SupabaseDb(supabase)
+    trending_refresh_utc = os.environ.get("TRENDING_REFRESH_UTC", "05:00")
+    last_trending_date = None
     while True:
         try:
             worker.tick()
         except Exception as e:
             log.error(f"[scheduler] tick error: {e}")
+        try:
+            from datetime import datetime, timezone
+            now = datetime.now(timezone.utc)
+            if (
+                now.strftime("%H:%M") >= trending_refresh_utc
+                and last_trending_date != now.date()
+            ):
+                generate_trending(db, orchestrator)
+                last_trending_date = now.date()
+        except Exception as e:
+            log.error(f"[scheduler] trending refresh error: {e}")
         time.sleep(60)
 
 

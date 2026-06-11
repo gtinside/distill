@@ -29,7 +29,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         self._anon_key = os.environ.get("SUPABASE_ANON_KEY", os.environ.get("SUPABASE_SERVICE_ROLE_KEY", ""))
 
     async def dispatch(self, request: Request, call_next):
-        if request.url.path == "/health":
+        if request.url.path in ("/health", "/trending"):
             return await call_next(request)
         user_id = await self._extract_user_id(request)
         if not user_id:
@@ -93,6 +93,14 @@ def create_app(db, orchestrator, jwt_secret: str = "") -> FastAPI:
     @app.get("/health", include_in_schema=False)
     def health():
         return {"status": "ok"}
+
+    @app.get("/trending")
+    def get_trending(request: Request):
+        cards = request.app.state.db.get_trending_cards()
+        generated_at = next(
+            (c["generated_at"] for c in cards if c.get("generated_at")), None
+        )
+        return {"generated_at": generated_at, "cards": cards}
 
     @app.post("/topics", status_code=201)
     def create_topic(body: TopicCreate, request: Request):
