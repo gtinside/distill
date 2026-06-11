@@ -1,25 +1,26 @@
 # Distill
 
 **Distill turns the topics you care about into a daily, AI-synthesized digest.**
-Define free-text Topics (e.g. _"Fed policy"_, _"ultra-low-latency systems"_) and
-receive a Digest of Topic Cards — each a one-sentence TL;DR, 4–5 bullet
-takeaways, and source links — emailed to you daily and refreshable on demand.
+Land on a public **Trending** front page — full Topic Cards (one-sentence TL;DR,
+4–5 bullets, sources) for what matters right now — then sign in to **follow**
+topics, add your own, and get a personalized Digest emailed daily.
 
 Originally an iOS app, Distill is now a **web app** (Next.js) backed by a Python
 synthesis service. See [`docs/adr/0003`](docs/adr/0003-web-client-and-email-delivery.md)
-for why.
+(web pivot) and [`docs/adr/0004`](docs/adr/0004-trending-front-page.md) (trending
+front page).
 
 ---
 
 ## Screenshots
 
-| Daily Digest | Topics & Settings |
+| Trending front page (logged-out) | Your Digest + Trending (signed-in) |
 | --- | --- |
-| ![Digest feed](docs/screenshots/digest.png) | ![Topics and settings](docs/screenshots/topics.png) |
+| ![Trending front page](docs/screenshots/home-trending.png) | ![Signed-in blend](docs/screenshots/digest.png) |
 
-| Onboarding | Sign in |
-| --- | --- |
-| ![Onboarding wizard](docs/screenshots/onboarding.png) | ![Sign in](docs/screenshots/signin.png) |
+| Topics & Settings | Onboarding | Sign in |
+| --- | --- | --- |
+| ![Topics](docs/screenshots/topics.png) | ![Onboarding](docs/screenshots/onboarding.png) | ![Sign in](docs/screenshots/signin.png) |
 
 ---
 
@@ -160,6 +161,7 @@ npm run dev
 | `EXA_API_KEY` | Source fetching |
 | `RESEND_API_KEY`, `RESEND_FROM_EMAIL` | Daily digest email |
 | `APP_BASE_URL` | Link the email points back to |
+| `TRENDING_REFRESH_UTC` | Daily time to regenerate the global Trending digest (default `05:00`) |
 
 **Web** (`.env.local`):
 
