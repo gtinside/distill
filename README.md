@@ -84,33 +84,50 @@ cd web && npm run build && npm run lint # web typecheck + build + lint
 ## Architecture
 
 ```
-┌────────────────┐      Supabase JWT (cookie)      ┌──────────────────────┐
-│  Next.js (web) │ ──────────────────────────────▶ │  FastAPI (backend)   │
-│  Vercel        │   server-side BFF proxy          │  Railway worker      │
-└────────────────┘                                  └─────────┬────────────┘
-        │  magic-link auth                                    │
-        ▼                                                     ▼
-┌────────────────┐                              ┌──────────────────────────┐
-│  Supabase      │  Postgres + Auth             │ Exa.ai (sources)         │
-│                │                              │ Claude Sonnet (synthesis)│
-└────────────────┘                              │ Resend (daily email)     │
-                                                └──────────────────────────┘
+            ┌──────────────────────────── Browser ────────────────────────────┐
+            │  /  (logged out)        /  (signed in)            /topics         │
+            │  Trending front page    Your Digest +             manage topics   │
+            │  — full cards, no auth   Trending to follow        + settings      │
+            └────────────────────────────────┬────────────────────────────────┘
+                                             │  httpOnly cookie session
+                                             ▼
+   ┌──────────────────────── Next.js · Vercel  (web/) ────────────────────────┐
+   │  Server components + server-side BFF · @supabase/ssr · magic-link auth     │
+   └─────────────┬───────────────────────────────────────────────┬────────────┘
+   Supabase JWT  │  (Bearer, server → server)                     │  magic link
+                 ▼                                                ▼
+   ┌─────────────────── FastAPI · Railway  (backend/) ───────┐   ┌───────────────┐
+   │  APILayer:  GET /trending (public) · /topics · /digest  │   │  Supabase     │
+   │  DigestOrchestrator → SynthesisEngine  (per Topic Card) │◀─▶│  Postgres     │
+   │  SchedulerWorker (every 60s):                           │   │  + Auth       │
+   │    • per-User Digest at Delivery Time → email           │   └───────────────┘
+   │    • daily shared Trending digest (global, all users)   │
+   └─────────────┬──────────────────┬───────────────────┬────┘
+                 ▼                  ▼                   ▼
+          ┌────────────┐   ┌──────────────────┐   ┌──────────────┐
+          │  Exa.ai    │   │  Claude Sonnet   │   │  Resend      │
+          │  (sources) │   │  (synthesis)     │   │  (email)     │
+          └────────────┘   └──────────────────┘   └──────────────┘
 ```
 
 - **`web/`** — Next.js 16 (App Router, TypeScript, Tailwind). UI + a thin
   server-side BFF that forwards the user's Supabase access token to the backend.
   Sessions live in httpOnly cookies (`@supabase/ssr`).
 - **`backend/`** — Python/FastAPI. The synthesis pipeline plus the
-  `SchedulerWorker` that generates and **emails** each Digest at the user's
-  Delivery Time. Runs as a long-lived Railway worker.
+  `SchedulerWorker`, which both **emails** each User's Digest at their Delivery
+  Time and regenerates the **shared Trending digest** once daily. Runs as a
+  long-lived Railway worker.
 - **`supabase/`** — Postgres schema + migrations. Auth via magic link.
 - **`ios/`** — the original SwiftUI client. **Deprecated** (see its README); kept
   for reference.
 
 Backend modules: `SynthesisEngine` (Topic + sources → Topic Card),
-`DigestOrchestrator` (fan-out + partial-failure handling), `SchedulerWorker`
-(polls for due users), `EmailDigestService` (renders + sends via Resend),
-`APILayer` (REST consumed by the web BFF). See [`docs/PRD.md`](docs/PRD.md).
+`DigestOrchestrator` (`generate_cards` over any Topic list — fan-out +
+partial-failure handling, reused for both per-User and Trending digests),
+`SchedulerWorker` (per-User digests + the daily global Trending pass),
+`EmailDigestService` (renders + sends via Resend), `APILayer` (REST consumed by
+the web BFF; `GET /trending` is public). See [`docs/PRD.md`](docs/PRD.md) and the
+ADRs in [`docs/adr/`](docs/adr/).
 
 ---
 
