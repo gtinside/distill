@@ -3,7 +3,10 @@
 // Toggled by NEXT_PUBLIC_DEMO_MODE. Mutations persist for the life of the
 // server process — enough for local use, demos, and screenshots.
 
-import type { Digest, Settings, Topic } from "./types";
+import type { Digest, Settings, Topic, TrendingCard } from "./types";
+
+// Cookie that marks a "signed-in" demo session (set by Continue-to-demo).
+export const DEMO_COOKIE = "distill_demo";
 
 export function isDemoMode(): boolean {
   if (process.env.NEXT_PUBLIC_DEMO_MODE === "true") return true;
@@ -91,3 +94,92 @@ export function demoState(): DemoState {
 export function demoReset() {
   g.__distillDemo = seed();
 }
+
+// The shared, global trending digest shown on the front page. A couple overlap
+// the seeded personal topics (Fed policy, EU AI regulation) so the signed-in
+// "not following" filter is demonstrable; the rest are fresh discovery.
+export const DEMO_TRENDING: TrendingCard[] = [
+  {
+    trending_topic_id: "tt1",
+    phrase: "Generative video models",
+    status: "ok",
+    tldr: "Text-to-video crossed into broadcast quality this week, reshaping the creative tooling debate.",
+    bullets: [
+      "Two new models hit near-photoreal 60-second clips with consistent characters.",
+      "Studios are piloting previz workflows; unions are pushing back on disclosure.",
+      "Open-weights challengers are ~6 months behind but closing fast.",
+      "Cost-per-second fell roughly 4x in three months.",
+    ],
+    sources: [
+      { title: "The state of AI video, mid-2026", url: "https://example.com/ai-video" },
+      { title: "Studios pilot generative previz", url: "https://example.com/previz" },
+    ],
+  },
+  {
+    trending_topic_id: "tt2",
+    phrase: "Commercial spaceflight",
+    status: "ok",
+    tldr: "A back-to-back launch cadence pushed reusable heavy-lift economics into a new regime.",
+    bullets: [
+      "Two heavy-lift cores flew and landed within 48 hours.",
+      "Per-kg-to-orbit estimates dropped below the symbolic $1,000 line.",
+      "A new crewed station module reached orbit ahead of schedule.",
+      "Insurers are repricing launch risk downward for the first time in years.",
+    ],
+    sources: [
+      { title: "Reusable heavy-lift economics", url: "https://example.com/launch" },
+    ],
+  },
+  {
+    trending_topic_id: "tt3",
+    phrase: "Fed policy",
+    status: "ok",
+    tldr: "The Fed held rates steady and signalled a patient, data-dependent stance for the summer.",
+    bullets: [
+      "Target range unchanged for the fourth straight meeting.",
+      "Dot plot trimmed expected 2026 cuts from three to two.",
+      "Services inflation flagged as the key holdout.",
+    ],
+    sources: [
+      { title: "FOMC statement — June 2026", url: "https://www.federalreserve.gov/" },
+    ],
+  },
+  {
+    trending_topic_id: "tt4",
+    phrase: "Longevity research",
+    status: "ok",
+    tldr: "A large partial-reprogramming trial reported its first durable human biomarker shifts.",
+    bullets: [
+      "Epigenetic age markers moved in a controlled cohort over 9 months.",
+      "Safety signals were clean; efficacy claims remain contested.",
+      "Funding rotated from supplements toward measurable interventions.",
+    ],
+    sources: [
+      { title: "Reprogramming trial readout", url: "https://example.com/longevity" },
+    ],
+  },
+  {
+    trending_topic_id: "tt5",
+    phrase: "NBA trades",
+    status: "ok",
+    tldr: "A blockbuster three-team deal reset the title odds two weeks before the deadline.",
+    bullets: [
+      "A perennial All-Star changed conferences in a pick-heavy package.",
+      "Two contenders cleared cap space for a second move.",
+      "Betting markets swung the championship favorite overnight.",
+    ],
+    sources: [{ title: "Deadline tracker", url: "https://example.com/nba" }],
+  },
+  {
+    trending_topic_id: "tt6",
+    phrase: "EU AI regulation",
+    status: "ok",
+    tldr: "Implementing guidance for the AI Act's high-risk tiers landed, clarifying compliance timelines.",
+    bullets: [
+      "Foundation-model duties phase in over the next two quarters.",
+      "Open-source carve-outs were narrowed from the draft.",
+      "National regulators published first audit checklists.",
+    ],
+    sources: [{ title: "AI Act guidance", url: "https://example.com/ai-act" }],
+  },
+];

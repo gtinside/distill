@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { Settings } from "@/lib/types";
-import { updateSettingsAction } from "@/lib/actions";
+import { updateSettingsAction, exitDemoAction } from "@/lib/actions";
 import { isDemoMode } from "@/lib/demo";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "./ui";
@@ -23,9 +23,11 @@ export function SettingsPanel({ settings }: { settings: Settings }) {
   }
 
   async function signOut() {
-    if (!isDemoMode()) {
-      await createClient().auth.signOut();
+    if (isDemoMode()) {
+      await exitDemoAction();
+      return;
     }
+    await createClient().auth.signOut();
     router.push("/signin");
   }
 

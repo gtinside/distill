@@ -102,3 +102,26 @@ def test_all_topics_succeed_returns_ok_cards():
     assert len(digest.topic_cards) == 2
     assert all(r.status == "ok" for r in digest.topic_cards)
     assert all(r.card is not None for r in digest.topic_cards)
+
+
+# --- generate_cards over an arbitrary (id, phrase) list (used by trending) ---
+
+def test_generate_cards_one_per_topic_with_partial_failure():
+    orchestrator = DigestOrchestrator(
+        fetch_topics=make_fetch_topics(),  # unused by generate_cards
+        fetch_sources=make_fetch_sources(),
+        synthesis_engine=make_engine_fails_for("EU AI regulation"),
+    )
+
+    topics = [
+        ("tt-0", "Fed policy"),
+        ("tt-1", "EU AI regulation"),
+        ("tt-2", "Quantum computing"),
+    ]
+    digest = orchestrator.generate_cards(topics)
+
+    assert len(digest.topic_cards) == 3
+    statuses = {r.topic_id: r.status for r in digest.topic_cards}
+    assert statuses["tt-0"] == "ok"
+    assert statuses["tt-1"] == "error"
+    assert statuses["tt-2"] == "ok"

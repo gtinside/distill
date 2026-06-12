@@ -42,7 +42,7 @@ export default function OnboardingPage() {
     setError(null);
     startTransition(async () => {
       const res = await completeOnboardingAction(topics, time, timezone);
-      if (res.ok) router.push("/digest");
+      if (res.ok) router.push("/");
       else setError(res.error);
     });
   }
@@ -61,7 +61,9 @@ export default function OnboardingPage() {
 
         {step === 1 ? (
           <Card>
-            <h1 className="text-xl font-semibold">What do you want to stay on top of?</h1>
+            <h1 className="font-display text-2xl font-medium tracking-[-0.01em]">
+              What do you want to stay on top of?
+            </h1>
             <p className="mt-1 text-sm text-muted">
               Add up to {TOPIC_LIMIT} topics. Be specific — “EU AI regulation”
               beats “tech”.
@@ -129,7 +131,9 @@ export default function OnboardingPage() {
           </Card>
         ) : (
           <Card>
-            <h1 className="text-xl font-semibold">When should your Digest arrive?</h1>
+            <h1 className="font-display text-2xl font-medium tracking-[-0.01em]">
+              When should your Digest arrive?
+            </h1>
             <p className="mt-1 text-sm text-muted">
               We’ll email your Digest each day at this time.
             </p>

@@ -27,3 +27,7 @@ _Avoid_: Feed, channel, subscription
 **Delivery Time**:
 The user-configured time (in the User's stored timezone) at which the backend generates and emails the daily Digest.
 _Avoid_: Schedule, notification time, send time
+
+**Trending**:
+A shared, global set of Topic Cards for a curated list of timely Topics, generated once daily and shown to everyone — the public front page, and the discovery source signed-in Users can Follow from.
+_Avoid_: Popular, hot, feed, for-you

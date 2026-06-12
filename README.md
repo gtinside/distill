@@ -1,25 +1,26 @@
 # Distill
 
 **Distill turns the topics you care about into a daily, AI-synthesized digest.**
-Define free-text Topics (e.g. _"Fed policy"_, _"ultra-low-latency systems"_) and
-receive a Digest of Topic Cards — each a one-sentence TL;DR, 4–5 bullet
-takeaways, and source links — emailed to you daily and refreshable on demand.
+Land on a public **Trending** front page — full Topic Cards (one-sentence TL;DR,
+4–5 bullets, sources) for what matters right now — then sign in to **follow**
+topics, add your own, and get a personalized Digest emailed daily.
 
 Originally an iOS app, Distill is now a **web app** (Next.js) backed by a Python
 synthesis service. See [`docs/adr/0003`](docs/adr/0003-web-client-and-email-delivery.md)
-for why.
+(web pivot) and [`docs/adr/0004`](docs/adr/0004-trending-front-page.md) (trending
+front page).
 
 ---
 
 ## Screenshots
 
-| Daily Digest | Topics & Settings |
+| Trending front page (logged-out) | Your Digest + Trending (signed-in) |
 | --- | --- |
-| ![Digest feed](docs/screenshots/digest.png) | ![Topics and settings](docs/screenshots/topics.png) |
+| ![Trending front page](docs/screenshots/home-trending.png) | ![Signed-in blend](docs/screenshots/digest.png) |
 
-| Onboarding | Sign in |
-| --- | --- |
-| ![Onboarding wizard](docs/screenshots/onboarding.png) | ![Sign in](docs/screenshots/signin.png) |
+| Topics & Settings | Onboarding | Sign in |
+| --- | --- | --- |
+| ![Topics](docs/screenshots/topics.png) | ![Onboarding](docs/screenshots/onboarding.png) | ![Sign in](docs/screenshots/signin.png) |
 
 ---
 
@@ -83,33 +84,50 @@ cd web && npm run build && npm run lint # web typecheck + build + lint
 ## Architecture
 
 ```
-┌────────────────┐      Supabase JWT (cookie)      ┌──────────────────────┐
-│  Next.js (web) │ ──────────────────────────────▶ │  FastAPI (backend)   │
-│  Vercel        │   server-side BFF proxy          │  Railway worker      │
-└────────────────┘                                  └─────────┬────────────┘
-        │  magic-link auth                                    │
-        ▼                                                     ▼
-┌────────────────┐                              ┌──────────────────────────┐
-│  Supabase      │  Postgres + Auth             │ Exa.ai (sources)         │
-│                │                              │ Claude Sonnet (synthesis)│
-└────────────────┘                              │ Resend (daily email)     │
-                                                └──────────────────────────┘
+            ┌──────────────────────────── Browser ────────────────────────────┐
+            │  /  (logged out)        /  (signed in)            /topics         │
+            │  Trending front page    Your Digest +             manage topics   │
+            │  — full cards, no auth   Trending to follow        + settings      │
+            └────────────────────────────────┬────────────────────────────────┘
+                                             │  httpOnly cookie session
+                                             ▼
+   ┌──────────────────────── Next.js · Vercel  (web/) ────────────────────────┐
+   │  Server components + server-side BFF · @supabase/ssr · magic-link auth     │
+   └─────────────┬───────────────────────────────────────────────┬────────────┘
+   Supabase JWT  │  (Bearer, server → server)                     │  magic link
+                 ▼                                                ▼
+   ┌─────────────────── FastAPI · Railway  (backend/) ───────┐   ┌───────────────┐
+   │  APILayer:  GET /trending (public) · /topics · /digest  │   │  Supabase     │
+   │  DigestOrchestrator → SynthesisEngine  (per Topic Card) │◀─▶│  Postgres     │
+   │  SchedulerWorker (every 60s):                           │   │  + Auth       │
+   │    • per-User Digest at Delivery Time → email           │   └───────────────┘
+   │    • daily shared Trending digest (global, all users)   │
+   └─────────────┬──────────────────┬───────────────────┬────┘
+                 ▼                  ▼                   ▼
+          ┌────────────┐   ┌──────────────────┐   ┌──────────────┐
+          │  Exa.ai    │   │  Claude Sonnet   │   │  Resend      │
+          │  (sources) │   │  (synthesis)     │   │  (email)     │
+          └────────────┘   └──────────────────┘   └──────────────┘
 ```
 
 - **`web/`** — Next.js 16 (App Router, TypeScript, Tailwind). UI + a thin
   server-side BFF that forwards the user's Supabase access token to the backend.
   Sessions live in httpOnly cookies (`@supabase/ssr`).
 - **`backend/`** — Python/FastAPI. The synthesis pipeline plus the
-  `SchedulerWorker` that generates and **emails** each Digest at the user's
-  Delivery Time. Runs as a long-lived Railway worker.
+  `SchedulerWorker`, which both **emails** each User's Digest at their Delivery
+  Time and regenerates the **shared Trending digest** once daily. Runs as a
+  long-lived Railway worker.
 - **`supabase/`** — Postgres schema + migrations. Auth via magic link.
 - **`ios/`** — the original SwiftUI client. **Deprecated** (see its README); kept
   for reference.
 
 Backend modules: `SynthesisEngine` (Topic + sources → Topic Card),
-`DigestOrchestrator` (fan-out + partial-failure handling), `SchedulerWorker`
-(polls for due users), `EmailDigestService` (renders + sends via Resend),
-`APILayer` (REST consumed by the web BFF). See [`docs/PRD.md`](docs/PRD.md).
+`DigestOrchestrator` (`generate_cards` over any Topic list — fan-out +
+partial-failure handling, reused for both per-User and Trending digests),
+`SchedulerWorker` (per-User digests + the daily global Trending pass),
+`EmailDigestService` (renders + sends via Resend), `APILayer` (REST consumed by
+the web BFF; `GET /trending` is public). See [`docs/PRD.md`](docs/PRD.md) and the
+ADRs in [`docs/adr/`](docs/adr/).
 
 ---
 
@@ -160,6 +178,7 @@ npm run dev
 | `EXA_API_KEY` | Source fetching |
 | `RESEND_API_KEY`, `RESEND_FROM_EMAIL` | Daily digest email |
 | `APP_BASE_URL` | Link the email points back to |
+| `TRENDING_REFRESH_UTC` | Daily time to regenerate the global Trending digest (default `05:00`) |
 
 **Web** (`.env.local`):
 
