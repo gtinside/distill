@@ -126,8 +126,10 @@ def scheduler_loop(supabase, orchestrator):
                 now.strftime("%H:%M") >= trending_refresh_utc
                 and last_trending_date != now.date()
             ):
-                generate_trending(db, orchestrator)
+                # Mark the attempt BEFORE running so a failed generation can't
+                # retry every 60s and burn the AI budget — at most one run/day.
                 last_trending_date = now.date()
+                generate_trending(db, orchestrator)
         except Exception as e:
             log.error(f"[scheduler] trending refresh error: {e}")
         time.sleep(60)

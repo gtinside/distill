@@ -138,12 +138,18 @@ class SupabaseDb:
         return cards
 
     def save_trending_cards(self, cards) -> None:
+        import logging
+        log = logging.getLogger(__name__)
         for card in cards:
             topic_id = card["trending_topic_id"]
-            self._db.table("trending_cards").delete().eq(
-                "trending_topic_id", topic_id
-            ).execute()
-            self._db.table("trending_cards").insert(card).execute()
+            try:
+                self._db.table("trending_cards").delete().eq(
+                    "trending_topic_id", topic_id
+                ).execute()
+                self._db.table("trending_cards").insert(card).execute()
+            except Exception as e:
+                # Log the precise per-card failure instead of aborting the batch.
+                log.error(f"[trending] save failed for topic {topic_id}: {e!r}")
 
     # ------------------------------------------------------------------
     # Settings (users table)
