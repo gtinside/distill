@@ -33,11 +33,17 @@ class DigestOrchestrator:
         return self._generate_card(topic_id, phrase)
 
     def _generate_card(self, topic_id: str, phrase: str) -> TopicCardResult:
+        last_err = None
         for _ in range(self._MAX_RETRIES):
             try:
                 exa_results = self._fetch_sources(phrase)
                 card = self._synthesis_engine.synthesize(phrase, exa_results)
                 return TopicCardResult(topic_id=topic_id, card=card, status="ok")
-            except Exception:
+            except Exception as e:
+                last_err = e
                 continue
+        import logging
+        logging.getLogger(__name__).error(
+            f"[synthesis] card failed for {phrase!r}: {last_err!r}"
+        )
         return TopicCardResult(topic_id=topic_id, card=None, status="error")

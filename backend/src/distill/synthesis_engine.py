@@ -1,4 +1,5 @@
 import json
+import re
 from dataclasses import dataclass
 
 
@@ -48,6 +49,19 @@ Rules:
 """
 
 
+def _extract_json(raw: str) -> str:
+    """Pull the JSON object out of a model response that may be wrapped in a
+    ```json fence or surrounded by prose. Falls back to the raw text."""
+    raw = raw.strip()
+    fence = re.search(r"```(?:json)?\s*(.*?)\s*```", raw, re.DOTALL)
+    if fence:
+        raw = fence.group(1).strip()
+    start, end = raw.find("{"), raw.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        return raw[start : end + 1]
+    return raw
+
+
 class SynthesisEngine:
     def __init__(self, claude_client):
         self._client = claude_client
@@ -70,7 +84,7 @@ class SynthesisEngine:
             )
             raw = message.content[0].text
             try:
-                data = json.loads(raw)
+                data = json.loads(_extract_json(raw))
                 return TopicCard(
                     tldr=data["tldr"],
                     bullets=data["bullets"],
