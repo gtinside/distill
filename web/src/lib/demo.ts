@@ -9,11 +9,9 @@ import type { Digest, Settings, Topic, TrendingCard } from "./types";
 export const DEMO_COOKIE = "distill_demo";
 
 export function isDemoMode(): boolean {
-  if (process.env.NEXT_PUBLIC_DEMO_MODE === "true") return true;
-  if (process.env.NEXT_PUBLIC_DEMO_MODE === "false") return false;
-  // Default: demo unless a real Supabase project is configured. Makes a
-  // zero-config deploy (e.g. a fresh Vercel import) work out of the box.
-  return !process.env.NEXT_PUBLIC_SUPABASE_URL;
+  // Demo must be explicit. Never infer it from a missing Supabase URL — a prod
+  // misconfiguration must fail closed (real auth), not silently serve seed data.
+  return process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 }
 
 export const DEMO_USER = { id: "demo-user", email: "maya@example.com" };

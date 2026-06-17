@@ -402,6 +402,57 @@ def test_invalid_bearer_jwt_returns_401():
 
 
 # ---------------------------------------------------------------------------
+# Security: X-User-Id header is NOT trusted unless explicitly enabled
+# ---------------------------------------------------------------------------
+
+def test_header_auth_rejected_when_flag_disabled(monkeypatch):
+    monkeypatch.delenv("ALLOW_HEADER_AUTH", raising=False)
+    client = make_client()
+
+    resp = client.post(
+        "/topics", json={"phrase": "machine learning"},
+        headers={"X-User-Id": "anyone"},
+    )
+
+    assert resp.status_code == 401  # header bypass disabled in production
+
+
+# ---------------------------------------------------------------------------
+# Security: PATCH /settings only accepts whitelisted fields
+# ---------------------------------------------------------------------------
+
+def test_settings_ignores_non_whitelisted_fields():
+    db = StubDb()
+    client = make_client(db=db)
+
+    resp = client.patch(
+        "/settings",
+        json={"delivery_time": "09:00", "email": "evil@example.com", "id": "other-user"},
+        headers={"X-User-Id": "user-1"},
+    )
+
+    assert resp.status_code == 200
+    assert db.settings["delivery_time"] == "09:00"
+    assert "email" not in db.settings
+    assert "id" not in db.settings
+
+
+# ---------------------------------------------------------------------------
+# Security: POST /digest/generate is rate-limited per user
+# ---------------------------------------------------------------------------
+
+def test_generate_digest_rate_limited():
+    from distill.digest_orchestrator import Digest
+    client = make_client(orchestrator=StubOrchestrator(result=Digest(topic_cards=[])))
+
+    first = client.post("/digest/generate", headers={"X-User-Id": "user-1"})
+    second = client.post("/digest/generate", headers={"X-User-Id": "user-1"})
+
+    assert first.status_code == 202
+    assert second.status_code == 429
+
+
+# ---------------------------------------------------------------------------
 # Behavior 16: POST /digest/topics/:id/refresh — no recent refresh -> 200, card returned
 # ---------------------------------------------------------------------------
 

@@ -27,6 +27,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
         self._jwt_secret = jwt_secret
         self._supabase_url = os.environ.get("SUPABASE_URL", "")
         self._anon_key = os.environ.get("SUPABASE_ANON_KEY", os.environ.get("SUPABASE_SERVICE_ROLE_KEY", ""))
+        # Trusting an X-User-Id header is a test-only convenience and a full auth
+        # bypass if ever enabled in production. Off unless ALLOW_HEADER_AUTH=1.
+        self._allow_header_auth = os.environ.get("ALLOW_HEADER_AUTH") == "1"
 
     async def dispatch(self, request: Request, call_next):
         if request.url.path in ("/health", "/trending"):
@@ -49,9 +52,11 @@ class AuthMiddleware(BaseHTTPMiddleware):
             user_id = self._decode_jwt_local(token)
             if user_id:
                 return user_id
-            # Fall back to Supabase Auth API (works for real Apple-signed sessions)
+            # Fall back to Supabase Auth API (works for real Supabase sessions)
             return await self._validate_via_supabase(token)
-        return request.headers.get("x-user-id") or None
+        if self._allow_header_auth:
+            return request.headers.get("x-user-id") or None
+        return None
 
     def _decode_jwt_local(self, token: str) -> str | None:
         if not self._jwt_secret:
@@ -103,6 +108,7 @@ def create_app(db, orchestrator, jwt_secret: str = "") -> FastAPI:
     app.add_middleware(AuthMiddleware, jwt_secret=jwt_secret)
     app.state.db = db
     app.state.orchestrator = orchestrator
+    app.state.generate_cooldowns = {}
 
     @app.get("/health", include_in_schema=False)
     def health():
@@ -165,6 +171,16 @@ def create_app(db, orchestrator, jwt_secret: str = "") -> FastAPI:
         # web tier to wait on synchronously. Run it in the background and return
         # immediately; the client polls GET /digest for the result.
         user_id = request.state.user_id
+        # Per-user cooldown so generation can't be spammed (DoS / Claude bill).
+        import time
+        cooldowns = request.app.state.generate_cooldowns
+        now = time.monotonic()
+        if now - cooldowns.get(user_id, 0.0) < 300:
+            raise HTTPException(
+                status_code=429,
+                detail="A Digest was just generated — try again in a few minutes.",
+            )
+        cooldowns[user_id] = now
         background_tasks.add_task(
             _run_digest_generation,
             request.app.state.orchestrator,
@@ -216,6 +232,10 @@ def create_app(db, orchestrator, jwt_secret: str = "") -> FastAPI:
     @app.patch("/settings")
     async def patch_settings(request: Request):
         body = await request.json()
-        return request.app.state.db.update_settings(request.state.user_id, body)
+        # Whitelist updatable fields — never let the client set arbitrary
+        # columns (email, id, apple_sub, ...).
+        allowed = {"delivery_time", "timezone"}
+        data = {k: v for k, v in body.items() if k in allowed}
+        return request.app.state.db.update_settings(request.state.user_id, data)
 
     return app

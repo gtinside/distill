@@ -1,7 +1,15 @@
 """Renders a Digest as HTML email and sends it via an injected email client."""
 from __future__ import annotations
 
+import html
+
 from distill.digest_orchestrator import Digest
+
+
+def _safe_url(url: str) -> str:
+    """Only allow http(s) links; neutralise anything else (e.g. javascript:)."""
+    u = (url or "").strip()
+    return u if u.lower().startswith(("http://", "https://")) else "#"
 
 
 class EmailDigestService:
@@ -61,14 +69,16 @@ class EmailDigestService:
                 "Open Distill to retry.</em></p></section>"
             )
         card = result.card
-        bullets = "".join(f"<li>{b}</li>" for b in card.bullets)
+        bullets = "".join(f"<li>{html.escape(b)}</li>" for b in card.bullets)
         sources = "".join(
-            f'<li><a href="{s.url}">{s.title}</a></li>' for s in card.sources
+            f'<li><a href="{html.escape(_safe_url(s.url))}">'
+            f"{html.escape(s.title)}</a></li>"
+            for s in card.sources
         )
         return (
             '<section style="margin:24px 0;padding:16px;border:1px solid #eee;'
             'border-radius:8px">'
-            f'<h2 style="font-size:18px;margin:0 0 12px">{card.tldr}</h2>'
+            f'<h2 style="font-size:18px;margin:0 0 12px">{html.escape(card.tldr)}</h2>'
             f"<ul>{bullets}</ul>"
             '<p style="color:#666;font-size:13px;margin:12px 0 4px">Sources:</p>'
             f"<ul>{sources}</ul>"
