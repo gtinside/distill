@@ -62,6 +62,20 @@ export async function refreshCardAction(topicId: string): Promise<ActionResult> 
   }
 }
 
+// Kick off digest generation (runs in the background on the API) and return
+// immediately — the client polls by refreshing until cards appear.
+export async function generateDigestAction(): Promise<ActionResult> {
+  try {
+    await api.generateDigest();
+    return { ok: true };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "Couldn’t start digest generation.",
+    };
+  }
+}
+
 export async function updateSettingsAction(data: {
   delivery_time?: string;
   timezone?: string;

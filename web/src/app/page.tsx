@@ -6,6 +6,7 @@ import { Button, Eyebrow, Logo, NavBar } from "@/components/ui";
 import { DigestCard } from "@/components/DigestCard";
 import { RefreshButton } from "@/components/RefreshButton";
 import { FollowButton } from "@/components/FollowButton";
+import { GenerateDigestButton } from "@/components/GenerateDigestButton";
 
 export const dynamic = "force-dynamic";
 
@@ -116,18 +117,7 @@ function SignedIn({
             <Eyebrow>{todayLabel()}</Eyebrow>
           </div>
 
-          {cards.length === 0 ? (
-            <div className="rounded-2xl border border-border bg-surface p-6 text-center">
-              <p className="text-sm text-muted">
-                You’re not following any topics yet. Follow a few trending ones
-                below — or{" "}
-                <Link href="/topics" className="text-accent hover:underline">
-                  add your own
-                </Link>
-                .
-              </p>
-            </div>
-          ) : (
+          {cards.length > 0 ? (
             <div className="space-y-4">
               {cards.map((card, i) => (
                 <DigestCard
@@ -138,6 +128,48 @@ function SignedIn({
                   action={<RefreshButton topicId={card.topic_id} />}
                 />
               ))}
+            </div>
+          ) : topics.length > 0 ? (
+            <div className="rounded-2xl border border-border bg-surface p-6">
+              <p className="text-sm text-foreground">
+                You’re following{" "}
+                <strong>
+                  {topics.length} topic{topics.length === 1 ? "" : "s"}
+                </strong>
+                , but today’s Digest hasn’t been built yet.
+              </p>
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {topics.map((t) => (
+                  <li
+                    key={t.id}
+                    className="rounded-full border border-border bg-background px-3 py-1 text-xs text-muted"
+                  >
+                    {t.phrase}
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-5">
+                <GenerateDigestButton />
+              </div>
+              <p className="mt-3 text-xs text-faint">
+                Your Digest is also built automatically each day at your delivery
+                time — change it in{" "}
+                <Link href="/topics" className="text-accent hover:underline">
+                  Settings
+                </Link>
+                .
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-border bg-surface p-6 text-center">
+              <p className="text-sm text-muted">
+                You’re not following any topics yet. Follow a few trending ones
+                below — or{" "}
+                <Link href="/topics" className="text-accent hover:underline">
+                  add your own
+                </Link>
+                .
+              </p>
             </div>
           )}
         </section>
