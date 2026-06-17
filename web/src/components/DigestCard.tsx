@@ -2,6 +2,11 @@ import type { ReactNode } from "react";
 import type { TopicCard } from "@/lib/types";
 import { Eyebrow } from "./ui";
 
+// Guard against javascript:/data: URLs from external (Exa) source content.
+function isSafeUrl(url: string): boolean {
+  return /^https?:\/\//i.test((url || "").trim());
+}
+
 // Presentational Topic Card — used for both the personal Digest and Trending.
 // `action` is the top-right control (Refresh for personal, Follow for trending).
 export function DigestCard({
@@ -51,14 +56,18 @@ export function DigestCard({
               <ul className="mt-1.5 space-y-1">
                 {card.sources.map((s, i) => (
                   <li key={i}>
-                    <a
-                      href={s.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-accent/90 underline-offset-2 hover:text-accent hover:underline"
-                    >
-                      {s.title}
-                    </a>
+                    {isSafeUrl(s.url) ? (
+                      <a
+                        href={s.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-accent/90 underline-offset-2 hover:text-accent hover:underline"
+                      >
+                        {s.title}
+                      </a>
+                    ) : (
+                      <span className="text-sm text-muted">{s.title}</span>
+                    )}
                   </li>
                 ))}
               </ul>
