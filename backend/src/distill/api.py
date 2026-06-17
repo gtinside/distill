@@ -4,7 +4,7 @@ from __future__ import annotations
 import os
 from datetime import datetime, timezone, timedelta
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from pydantic import BaseModel
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
@@ -84,6 +84,20 @@ class AuthMiddleware(BaseHTTPMiddleware):
         return None
 
 
+def _run_digest_generation(orchestrator, db, user_id: str) -> None:
+    """Generate a User's Digest and persist it. Runs in a background task."""
+    result = orchestrator.generate(user_id)
+    cards = []
+    for cr in result.topic_cards:
+        card: dict = {"topic_id": cr.topic_id, "status": cr.status}
+        if cr.card:
+            card["tldr"] = cr.card.tldr
+            card["bullets"] = cr.card.bullets
+            card["sources"] = [{"title": s.title, "url": s.url} for s in cr.card.sources]
+        cards.append(card)
+    db.save_digest(user_id, {"topic_cards": cards})
+
+
 def create_app(db, orchestrator, jwt_secret: str = "") -> FastAPI:
     app = FastAPI()
     app.add_middleware(AuthMiddleware, jwt_secret=jwt_secret)
@@ -145,19 +159,19 @@ def create_app(db, orchestrator, jwt_secret: str = "") -> FastAPI:
             raise HTTPException(status_code=404, detail="No digest found")
         return result
 
-    @app.post("/digest/generate")
-    def generate_digest(request: Request):
+    @app.post("/digest/generate", status_code=202)
+    def generate_digest(request: Request, background_tasks: BackgroundTasks):
+        # Synthesis fans out several slow Claude/Exa calls — too long for the
+        # web tier to wait on synchronously. Run it in the background and return
+        # immediately; the client polls GET /digest for the result.
         user_id = request.state.user_id
-        result = request.app.state.orchestrator.generate(user_id)
-        cards = []
-        for cr in result.topic_cards:
-            card: dict = {"topic_id": cr.topic_id, "status": cr.status}
-            if cr.card:
-                card["tldr"] = cr.card.tldr
-                card["bullets"] = cr.card.bullets
-                card["sources"] = [{"title": s.title, "url": s.url} for s in cr.card.sources]
-            cards.append(card)
-        return request.app.state.db.save_digest(user_id, {"topic_cards": cards})
+        background_tasks.add_task(
+            _run_digest_generation,
+            request.app.state.orchestrator,
+            request.app.state.db,
+            user_id,
+        )
+        return {"status": "generating"}
 
     @app.post("/digest/topics/{topic_id}/refresh")
     def refresh_topic_card(topic_id: str, request: Request):

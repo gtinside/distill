@@ -258,7 +258,7 @@ def test_get_digest():
 
 
 # ---------------------------------------------------------------------------
-# Behavior 8: POST /digest/generate -> 200, orchestrator called, digest returned
+# Behavior 8: POST /digest/generate -> 202, generation runs in background
 # ---------------------------------------------------------------------------
 
 def test_generate_digest():
@@ -269,8 +269,9 @@ def test_generate_digest():
 
     resp = client.post("/digest/generate", headers={"X-User-Id": "user-99"})
 
-    assert resp.status_code == 200
-    assert resp.json()["topic_cards"][0]["topic_id"] == "t42"
+    # Returns immediately; TestClient runs the background task before returning.
+    assert resp.status_code == 202
+    assert resp.json() == {"status": "generating"}
     assert orchestrator.called_generate_with == "user-99"
 
 
