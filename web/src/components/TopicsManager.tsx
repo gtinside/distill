@@ -23,7 +23,7 @@ import {
   deleteTopicAction,
   reorderTopicsAction,
 } from "@/lib/actions";
-import { Button } from "./ui";
+import { Button, IconClose, IconDrag, Input } from "./ui";
 
 function SortableRow({
   topic,
@@ -39,25 +39,27 @@ function SortableRow({
     <li
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`flex items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2.5 ${
-        isDragging ? "shadow-lg" : ""
+      className={`flex items-center gap-2.5 rounded-lg border bg-surface px-2.5 py-2.5 transition-colors ${
+        isDragging
+          ? "border-border-strong shadow-[var(--shadow-card-hover)]"
+          : "border-border hover:border-border-strong"
       }`}
     >
       <button
         {...attributes}
         {...listeners}
-        className="cursor-grab touch-none text-muted hover:text-foreground"
+        className="grid h-7 w-7 shrink-0 cursor-grab touch-none place-items-center rounded-md text-faint transition-colors hover:bg-surface-2 hover:text-foreground active:cursor-grabbing"
         aria-label="Drag to reorder"
       >
-        ⠿
+        <IconDrag size={16} />
       </button>
-      <span className="flex-1 text-sm">{topic.phrase}</span>
+      <span className="flex-1 text-sm text-foreground">{topic.phrase}</span>
       <button
         onClick={() => onDelete(topic.id)}
-        className="text-muted hover:text-danger"
+        className="grid h-7 w-7 shrink-0 cursor-pointer place-items-center rounded-md text-muted transition-colors hover:bg-danger-soft hover:text-danger active:scale-95"
         aria-label={`Delete ${topic.phrase}`}
       >
-        ✕
+        <IconClose size={15} />
       </button>
     </li>
   );
@@ -114,20 +116,24 @@ export function TopicsManager({ initial }: { initial: Topic[] }) {
   return (
     <div>
       <form className="flex gap-2" onSubmit={add}>
-        <input
+        <Input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           maxLength={TOPIC_MAX}
           placeholder={atLimit ? "Topic limit reached" : "Add a topic…"}
           disabled={atLimit}
-          className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-accent disabled:opacity-50"
+          aria-label="Add a topic"
         />
         <Button type="submit" disabled={!draftValid || atLimit}>
           Add
         </Button>
       </form>
-      {error && <p className="mt-2 text-sm text-danger">{error}</p>}
-      <p className="mt-2 text-xs text-muted">
+      {error && (
+        <p role="alert" className="mt-2 text-sm text-danger">
+          {error}
+        </p>
+      )}
+      <p className="mt-2.5 text-xs text-muted">
         {topics.length}/{TOPIC_LIMIT} topics · drag to reorder
       </p>
 
@@ -142,7 +148,11 @@ export function TopicsManager({ initial }: { initial: Topic[] }) {
       </DndContext>
 
       {topics.length === 0 && (
-        <p className="mt-4 text-sm text-muted">No topics yet. Add your first above.</p>
+        <div className="mt-4 rounded-lg border border-dashed border-border-strong px-4 py-6 text-center">
+          <p className="text-sm text-muted">
+            No topics yet. Add your first above to start your daily Digest.
+          </p>
+        </div>
       )}
     </div>
   );
