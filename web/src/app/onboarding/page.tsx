@@ -9,7 +9,15 @@ import {
   TOPIC_MIN,
 } from "@/lib/types";
 import { completeOnboardingAction } from "@/lib/actions";
-import { Button, Card, Logo } from "@/components/ui";
+import {
+  Button,
+  Card,
+  Field,
+  IconClose,
+  IconPlus,
+  Input,
+  Logo,
+} from "@/components/ui";
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -56,7 +64,26 @@ export default function OnboardingPage() {
       <div className="w-full max-w-lg">
         <div className="mb-6 flex items-center justify-between">
           <Logo />
-          <span className="text-xs text-muted">Step {step} of 2</span>
+          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-faint">
+            Step {step} of 2
+          </span>
+        </div>
+        <div
+          className="mb-6 flex gap-1.5"
+          role="progressbar"
+          aria-valuenow={step}
+          aria-valuemin={1}
+          aria-valuemax={2}
+          aria-label={`Onboarding step ${step} of 2`}
+        >
+          {[1, 2].map((s) => (
+            <span
+              key={s}
+              className={`h-1 flex-1 rounded-full transition-colors duration-300 ${
+                s <= step ? "bg-accent" : "bg-border-strong"
+              }`}
+            />
+          ))}
         </div>
 
         {step === 1 ? (
@@ -70,19 +97,19 @@ export default function OnboardingPage() {
             </p>
 
             <form
-              className="mt-4 flex gap-2"
+              className="mt-5 flex gap-2"
               onSubmit={(e) => {
                 e.preventDefault();
                 addTopic(draft);
               }}
             >
-              <input
+              <Input
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 maxLength={TOPIC_MAX}
                 placeholder="Type a topic…"
                 disabled={atLimit}
-                className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-accent disabled:opacity-50"
+                aria-label="Add a topic"
               />
               <Button type="submit" disabled={!draftValid || atLimit}>
                 Add
@@ -95,28 +122,29 @@ export default function OnboardingPage() {
                   <button
                     key={ex}
                     onClick={() => addTopic(ex)}
-                    className="rounded-full border border-border bg-background px-3 py-1 text-xs text-muted transition hover:border-accent hover:text-foreground"
+                    className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-border bg-background px-3 py-1 text-xs text-muted transition-colors duration-150 hover:border-accent hover:text-foreground active:scale-[0.97]"
                   >
-                    + {ex}
+                    <IconPlus size={12} />
+                    {ex}
                   </button>
                 ))}
               </div>
             )}
 
             {topics.length > 0 && (
-              <ul className="mt-4 space-y-2">
+              <ul className="mt-5 space-y-2">
                 {topics.map((t, i) => (
                   <li
                     key={i}
-                    className="flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                    className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background px-3 py-2.5 text-sm"
                   >
                     <span>{t}</span>
                     <button
                       onClick={() => setTopics(topics.filter((_, j) => j !== i))}
-                      className="text-muted hover:text-danger"
+                      className="grid h-7 w-7 shrink-0 cursor-pointer place-items-center rounded-md text-muted transition-colors hover:bg-danger-soft hover:text-danger active:scale-95"
                       aria-label={`Remove ${t}`}
                     >
-                      ✕
+                      <IconClose size={15} />
                     </button>
                   </li>
                 ))}
@@ -138,25 +166,31 @@ export default function OnboardingPage() {
               We’ll email your Digest each day at this time.
             </p>
 
-            <div className="mt-5 space-y-4">
-              <div>
-                <label htmlFor="time" className="mb-1 block text-sm font-medium">
-                  Delivery time
-                </label>
-                <input
+            <div className="mt-5">
+              <Field
+                label="Delivery time"
+                htmlFor="time"
+                hint={
+                  <>
+                    Timezone detected: <strong>{timezone}</strong>
+                  </>
+                }
+              >
+                <Input
                   id="time"
                   type="time"
                   value={time}
                   onChange={(e) => setTime(e.target.value)}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-accent"
+                  className="w-auto"
                 />
-              </div>
-              <p className="text-xs text-muted">
-                Timezone detected: <strong>{timezone}</strong>
-              </p>
+              </Field>
             </div>
 
-            {error && <p className="mt-4 text-sm text-danger">{error}</p>}
+            {error && (
+              <p role="alert" className="mt-4 text-sm text-danger">
+                {error}
+              </p>
+            )}
 
             <div className="mt-6 flex items-center justify-between">
               <Button variant="ghost" onClick={() => setStep(1)} disabled={pending}>

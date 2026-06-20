@@ -6,7 +6,7 @@ import type { Settings } from "@/lib/types";
 import { updateSettingsAction, exitDemoAction } from "@/lib/actions";
 import { isDemoMode } from "@/lib/demo";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "./ui";
+import { Button, Field, IconCheck, Input } from "./ui";
 
 export function SettingsPanel({ settings }: { settings: Settings }) {
   const router = useRouter();
@@ -33,12 +33,17 @@ export function SettingsPanel({ settings }: { settings: Settings }) {
 
   return (
     <div className="space-y-5">
-      <div>
-        <label htmlFor="delivery" className="mb-1 block text-sm font-medium">
-          Delivery time
-        </label>
+      <Field
+        label="Delivery time"
+        htmlFor="delivery"
+        hint={
+          <>
+            Timezone: <strong>{settings.timezone}</strong>
+          </>
+        }
+      >
         <div className="flex items-center gap-3">
-          <input
+          <Input
             id="delivery"
             type="time"
             value={time}
@@ -46,17 +51,22 @@ export function SettingsPanel({ settings }: { settings: Settings }) {
               setTime(e.target.value);
               setSaved(false);
             }}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-accent"
+            className="w-auto"
           />
           <Button variant="secondary" onClick={save} disabled={pending}>
             {pending ? "Saving…" : "Save"}
           </Button>
-          {saved && <span className="text-sm text-muted">Saved ✓</span>}
+          {saved && (
+            <span
+              role="status"
+              className="inline-flex items-center gap-1 text-sm text-accent"
+            >
+              <IconCheck size={15} />
+              Saved
+            </span>
+          )}
         </div>
-        <p className="mt-2 text-xs text-muted">
-          Timezone: <strong>{settings.timezone}</strong>
-        </p>
-      </div>
+      </Field>
 
       <div className="border-t border-border pt-4">
         <Button variant="danger" onClick={signOut}>

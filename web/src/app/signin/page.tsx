@@ -4,7 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { isDemoMode } from "@/lib/demo";
 import { enterDemoAction } from "@/lib/actions";
-import { Button, Card, Logo } from "@/components/ui";
+import { Button, Card, Field, IconCheck, Input, Logo } from "@/components/ui";
 
 export default function SignInPage() {
   const demo = isDemoMode();
@@ -53,15 +53,20 @@ export default function SignInPage() {
               </form>
             </div>
           ) : status === "sent" ? (
-            <div className="space-y-2 text-center">
-              <p className="font-medium">Check your inbox</p>
-              <p className="text-sm text-muted">
+            <div className="space-y-3 text-center">
+              <span className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-accent-soft text-accent">
+                <IconCheck size={22} />
+              </span>
+              <p className="font-display text-lg text-foreground">
+                Check your inbox
+              </p>
+              <p className="text-sm leading-relaxed text-muted">
                 We sent a magic link to <strong>{email}</strong>. Click it to
                 sign in.
               </p>
               <Button
                 variant="ghost"
-                className="mt-2"
+                className="mt-1"
                 onClick={() => setStatus("idle")}
               >
                 Use a different email
@@ -69,20 +74,17 @@ export default function SignInPage() {
             </div>
           ) : (
             <form onSubmit={sendMagicLink} className="space-y-4">
-              <div>
-                <label htmlFor="email" className="mb-1 block text-sm font-medium">
-                  Email
-                </label>
-                <input
+              <Field label="Email" htmlFor="email">
+                <Input
                   id="email"
                   type="email"
                   required
+                  autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-accent"
                 />
-              </div>
+              </Field>
               <Button
                 type="submit"
                 className="w-full"
@@ -90,7 +92,11 @@ export default function SignInPage() {
               >
                 {status === "sending" ? "Sending…" : "Send magic link"}
               </Button>
-              {error && <p className="text-sm text-danger">{error}</p>}
+              {error && (
+                <p role="alert" className="text-sm text-danger">
+                  {error}
+                </p>
+              )}
               <p className="text-center text-xs text-muted">
                 No passwords. We’ll email you a one-time sign-in link.
               </p>
