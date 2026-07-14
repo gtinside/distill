@@ -122,6 +122,15 @@ def create_app(db, orchestrator, jwt_secret: str = "") -> FastAPI:
         )
         return {"generated_at": generated_at, "cards": cards}
 
+    @app.post("/admin/trending/refresh", include_in_schema=False)
+    def admin_refresh_trending(request: Request):
+        secret = os.environ.get("ADMIN_SECRET", "")
+        if not secret or request.headers.get("x-admin-secret") != secret:
+            return Response(content='{"detail":"Forbidden"}', status_code=403, media_type="application/json")
+        from distill.main import generate_trending
+        cards = generate_trending(request.app.state.db, request.app.state.orchestrator)
+        return {"refreshed": len(cards)}
+
     @app.post("/topics", status_code=201)
     def create_topic(body: TopicCreate, request: Request):
         user_id = request.state.user_id
