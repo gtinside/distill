@@ -78,7 +78,7 @@ class SynthesisEngine:
         last_error = None
         for _ in range(3):
             message = self._client.messages.create(
-                model="claude-sonnet-4-5",
+                model="claude-haiku-4-5-20251001",
                 max_tokens=1024,
                 messages=[{"role": "user", "content": prompt}],
             )
