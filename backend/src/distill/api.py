@@ -32,7 +32,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         self._allow_header_auth = os.environ.get("ALLOW_HEADER_AUTH") == "1"
 
     async def dispatch(self, request: Request, call_next):
-        if request.url.path in ("/health", "/trending"):
+        if request.url.path in ("/health", "/trending", "/admin/trending/refresh"):
             return await call_next(request)
         user_id = await self._extract_user_id(request)
         if not user_id:
